@@ -1,0 +1,5 @@
+vec3
+main(vec2 uv)
+{
+  return vec3(uv.x, uv.y, 1.0);
+}
