@@ -2,7 +2,7 @@
 
 #include <iosfwd>
 
-struct program;
+class Program;
 
 bool
-check(const std::string& path, const program& prg, std::ostream& os);
+check(const std::string& path, const Program& program, std::ostream& os);

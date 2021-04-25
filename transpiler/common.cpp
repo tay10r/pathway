@@ -12,6 +12,8 @@ std::ostream&
 operator<<(std::ostream& os, TypeID typeID)
 {
   switch (typeID) {
+    case TypeID::Void:
+      return os << "void";
     case TypeID::Bool:
       return os << "bool";
     case TypeID::Int:
@@ -41,24 +43,18 @@ operator<<(std::ostream& os, TypeID typeID)
   return os;
 }
 
-void
-scope::def(const Var* v)
-{
-  this->vars.emplace(*v->name.identifier, v);
-}
-
 Type
 var_ref::GetType() const
 {
   assert(this->resolved_var != nullptr);
 
-  return this->resolved_var->mType;
+  return *this->resolved_var->mType;
 }
 
 bool
 var_ref::references_global_var() const
 {
-  return resolved_var ? resolved_var->is_global : false;
+  return resolved_var ? resolved_var->IsGlobal() : false;
 }
 
 swizzle::swizzle(const std::string& pattern)
@@ -140,6 +136,7 @@ Type
 member_expr::GetType() const
 {
   switch (base_expr->GetType().ID()) {
+    case TypeID::Void:
     case TypeID::Int:
     case TypeID::Float:
     case TypeID::Bool:
@@ -165,43 +162,28 @@ member_expr::GetType() const
   return base_expr->GetType();
 }
 
-const Var*
-symtab::find_var(const std::string& name) const
-{
-  for (auto scope_it = this->local_scopes.rbegin();
-       scope_it != this->local_scopes.rend();
-       scope_it++) {
-
-    auto result = scope_it->vars.find(name);
-
-    if (result != scope_it->vars.end())
-      return result->second;
-  }
-
-  for (const auto& global : this->prg.vars) {
-    if (*global->name.identifier == name)
-      return global.get();
-  }
-
-  return nullptr;
-}
-
 namespace {
 
 class program_state_requirement_checker final : public stmt_visitor
 {
 public:
-  bool get_requirement_flag() const noexcept { return this->requirement_flag; }
+  bool RequirementFlag() const noexcept { return mRequirementFlag; }
+
+  void visit(const AssignmentStmt& assignmentStmt) override
+  {
+    mRequirementFlag |= assignmentStmt.LValue().references_global_var() ||
+                        assignmentStmt.RValue().references_global_var();
+  }
 
   void visit(const decl_stmt& s) override
   {
     if (s.v->init_expr)
-      this->requirement_flag |= s.v->init_expr->references_global_var();
+      mRequirementFlag |= s.v->init_expr->references_global_var();
   }
 
   void visit(const return_stmt& s) override
   {
-    this->requirement_flag |= s.return_value->references_global_var();
+    mRequirementFlag |= s.return_value->references_global_var();
   }
 
   void visit(const compound_stmt& s) override
@@ -211,7 +193,7 @@ public:
   }
 
 private:
-  bool requirement_flag = false;
+  bool mRequirementFlag = false;
 };
 
 } // namespace
@@ -223,11 +205,29 @@ func::requires_program_state() const
 
   this->body->accept(checker);
 
-  return checker.get_requirement_flag();
+  return checker.RequirementFlag();
 }
 
 bool
 func::is_main() const noexcept
 {
   return *this->name.identifier == "main";
+}
+
+void
+Program::AppendGlobalVar(Var* globalVar)
+{
+  globalVar->MarkAsGlobal();
+
+  mGlobalVars.emplace_back(globalVar);
+
+  switch (globalVar->GetVariability()) {
+    case Variability::Uniform:
+      mUniformGlobalVars.emplace_back(globalVar);
+      break;
+    case Variability::Varying:
+    case Variability::Unbound:
+      mVaryingGlobalVars.emplace_back(globalVar);
+      break;
+  }
 }

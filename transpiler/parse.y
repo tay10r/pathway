@@ -5,9 +5,9 @@
 
 namespace {
 
-void yyerror(const location* loc, parse_observer& observer, const char* msg)
+void yyerror(const location* loc, ParseObserver& observer, const char* msg)
 {
-  observer.on_syntax_error(*loc, msg);
+  observer.OnSyntaxError(*loc, msg);
 }
 
 } // namespace
@@ -26,7 +26,7 @@ void yyerror(const location* loc, parse_observer& observer, const char* msg)
 
 %define api.pure full
 
-%parse-param {parse_observer& observer}
+%parse-param {ParseObserver& observer}
 
 %define parse.error verbose
 
@@ -45,7 +45,11 @@ void yyerror(const location* loc, parse_observer& observer, const char* msg)
 
 %token INVALID_CHAR "invalid character"
 
-%token<asTypeID> TYPE "type"
+%token<asTypeID> TYPE_NAME "type name"
+
+%token<asVariability> VARIABILITY "variability"
+
+%type <asType> type "type"
 
 %type <as_expr> primary_expr
 %type <as_expr> unary_expr
@@ -64,6 +68,8 @@ void yyerror(const location* loc, parse_observer& observer, const char* msg)
 
 %type <as_stmt> stmt
 
+%type <as_stmt> assignment_stmt
+
 %type <as_stmt> return_stmt
 
 %type <as_stmt> compound_stmt
@@ -74,7 +80,7 @@ void yyerror(const location* loc, parse_observer& observer, const char* msg)
 
 %type <as_func> func
 
-%type <as_program> program
+%type <asProgram> program
 
 %destructor { delete $$; } IDENTIFIER
 
@@ -98,50 +104,53 @@ void yyerror(const location* loc, parse_observer& observer, const char* msg)
 
 file: program END
     {
-      observer.on_program(*$1);
-      delete $1;
+      observer.OnProgram(std::unique_ptr<Program>($1));
     }
     ;
 
 program: func
        {
-         $$ = new program();
-         $$->funcs.emplace_back(std::unique_ptr<func>($1));
+         $$ = new Program();
+         $$->AppendFunc($1);
        }
        | program func
        {
          $$ = $1;
-         $$->funcs.emplace_back(std::unique_ptr<func>($2));
+         $$->AppendFunc($2);
        }
        | program var_decl
        {
          $$ = $1;
-
-         $2->is_global = true;
-
-         $$->vars.emplace_back(std::unique_ptr<Var>($2));
+         $$->AppendGlobalVar($2);
        }
        | var_decl
        {
-         $$ = new program();
-
-         $1->is_global = true;
-
-         $$->vars.emplace_back(std::unique_ptr<Var>($1));
+         $$ = new Program();
+         $$->AppendGlobalVar($1);
        }
        ;
 
-var_decl: TYPE IDENTIFIER ';'
+type: TYPE_NAME
+    {
+      $$ = new Type($1);
+    }
+    | VARIABILITY TYPE_NAME
+    {
+      $$ = new Type($2, $1);
+    }
+    ;
+
+var_decl: type IDENTIFIER ';'
         {
           $$ = new Var($1, decl_name($2, @2), nullptr);
         }
-        | TYPE IDENTIFIER '=' expr ';'
+        | type IDENTIFIER '=' expr ';'
         {
           $$ = new Var($1, decl_name($2, @2), $4);
         }
         ;
 
-param_decl: TYPE IDENTIFIER
+param_decl: type IDENTIFIER
           {
             $$ = new Var($1, decl_name($2, @2), nullptr);
           }
@@ -159,7 +168,7 @@ param_list: param_decl
           }
           ;
 
-func: TYPE IDENTIFIER '(' param_list ')' compound_stmt
+func: type IDENTIFIER '(' param_list ')' compound_stmt
     {
       $$ = new func($1, decl_name($2, @2), $4, $6);
     }
@@ -168,6 +177,7 @@ func: TYPE IDENTIFIER '(' param_list ')' compound_stmt
 stmt: compound_stmt
     | return_stmt
     | decl_stmt
+    | assignment_stmt
     ;
 
 stmt_list: stmt
@@ -181,6 +191,12 @@ stmt_list: stmt
            $$->emplace_back($2);
          }
          ;
+
+assignment_stmt: unary_expr '=' expr ';'
+               {
+                 $$ = new AssignmentStmt($1, $3);
+               }
+               ;
 
 decl_stmt: var_decl
          {
@@ -225,7 +241,7 @@ primary_expr: INT_LITERAL
             {
               $$ = new group_expr($2);
             }
-            | TYPE '(' expr_list ')'
+            | TYPE_NAME '(' expr_list ')'
             {
               $$ = new type_constructor($1, $3, @$);
             }

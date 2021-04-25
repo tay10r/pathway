@@ -10,15 +10,15 @@ struct check_context final
 {
   std::string path;
 
-  const program& prg;
+  const Program& program;
 
   check_context(const check_context&) = delete;
 
   check_context(const std::string& path_,
-                const program& prg_,
+                const Program& program_,
                 std::ostream& es_)
     : path(path_)
-    , prg(prg_)
+    , program(program_)
     , es(es_)
   {}
 
@@ -46,64 +46,6 @@ private:
   std::ostream& es;
 };
 
-struct sym_resolver final : public stmt_visitor
-{
-public:
-  sym_resolver(check_context& ctx_)
-    : ctx(ctx_)
-    , syms(ctx_.prg)
-  {}
-
-  void resolve_all_refs(const program& prg)
-  {
-    for (const auto& fn : prg.funcs)
-      resolve(*fn);
-
-    for (const auto& name : this->unresolved) {
-      ctx.emit_error(name->loc)
-        << "could not find '" << *name->identifier << "'" << std::endl;
-    }
-  }
-
-private:
-  void resolve(const func& fn)
-  {
-    this->syms.enter_scope();
-
-    for (const auto& p : *fn.params)
-      this->syms.def(p.get());
-
-    fn.body->accept(*this);
-
-    this->syms.exit_scope();
-  }
-
-  void visit(const compound_stmt& s) override
-  {
-    for (const auto& inner_stmt : *s.stmts)
-      inner_stmt->accept(*this);
-  }
-
-  void visit(const return_stmt& s) override
-  {
-    s.return_value->resolve(this->syms, this->unresolved);
-  }
-
-  void visit(const decl_stmt& s) override
-  {
-    if (s.v->init_expr)
-      s.v->init_expr->resolve(syms, unresolved);
-
-    this->syms.def(s.v.get());
-  }
-
-  std::vector<const decl_name*> unresolved;
-
-  check_context& ctx;
-
-  symtab syms;
-};
-
 class return_type_checker final : public stmt_visitor
 {
 public:
@@ -111,6 +53,8 @@ public:
     : mReturnType(returnType)
     , ctx(ctx_)
   {}
+
+  void visit(const AssignmentStmt&) override {}
 
   void visit(const compound_stmt& s) override
   {
@@ -146,26 +90,14 @@ public:
 
   void run_all_checks()
   {
-    run_sym_resolver();
-
-    if (this->ctx.get_error_count() > 0)
-      return;
-
     run_type_checks();
 
     check_entry_point();
   }
 
-  void run_sym_resolver()
-  {
-    sym_resolver resolver(ctx);
-
-    resolver.resolve_all_refs(ctx.prg);
-  }
-
   void run_type_checks()
   {
-    for (const auto& fn : ctx.prg.funcs)
+    for (const auto& fn : ctx.program.Funcs())
       this->type_check(*fn);
 
     // TODO : global vars
@@ -173,7 +105,7 @@ public:
 
   void type_check(const func& fn)
   {
-    return_type_checker ret_checker(fn.mReturnType, this->ctx);
+    return_type_checker ret_checker(*fn.mReturnType, this->ctx);
 
     fn.body->accept(ret_checker);
   }
@@ -182,7 +114,7 @@ public:
   {
     const func* entry = nullptr;
 
-    for (const auto& fn : this->ctx.prg.funcs) {
+    for (const auto& fn : this->ctx.program.Funcs()) {
 
       if (!fn->is_main())
         continue;
@@ -206,7 +138,7 @@ public:
 
   void check_entry_point_signature(const func& fn)
   {
-    if (fn.mReturnType != TypeID::Vec3) {
+    if (*fn.mReturnType != TypeID::Vec3) {
       this->ctx.emit_error(fn.name.loc)
         << "return type should be type 'vec3'" << std::endl;
     }
@@ -219,7 +151,7 @@ public:
     if (fn.params->size() < 1)
       return;
 
-    if (fn.params->at(0)->mType != TypeID::Vec2) {
+    if (*fn.params->at(0)->mType != TypeID::Vec2) {
       this->ctx.emit_error(fn.name.loc)
         << "parameter should be type 'vec2'" << std::endl;
     }
@@ -232,9 +164,9 @@ private:
 } // namespace
 
 bool
-check(const std::string& path, const program& prg, std::ostream& es)
+check(const std::string& path, const Program& program, std::ostream& es)
 {
-  check_context ctx(path, prg, es);
+  check_context ctx(path, program, es);
 
   checker c(ctx);
 

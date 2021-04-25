@@ -1,3 +1,5 @@
+varying vec3 color;
+
 vec3
 main(vec2 uv)
 {

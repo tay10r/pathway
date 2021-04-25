@@ -4,7 +4,7 @@
 
 #include <assert.h>
 
-struct program;
+class Program;
 
 class generator
 {
@@ -15,7 +15,7 @@ public:
 
   virtual ~generator() = default;
 
-  virtual void generate(const program&) = 0;
+  virtual void generate(const Program&) = 0;
 
 protected:
   std::ostream& os;

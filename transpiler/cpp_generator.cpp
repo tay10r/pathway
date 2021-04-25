@@ -284,6 +284,7 @@ void
 cpp_generator::visit(const member_expr& e)
 {
   switch (e.base_expr->GetType().ID()) {
+    case TypeID::Void:
     case TypeID::Bool:
     case TypeID::Int:
     case TypeID::Float:
@@ -306,7 +307,107 @@ cpp_generator::visit(const member_expr& e)
 }
 
 void
-cpp_generator::generate(const program& prg)
+cpp_generator::generate_pixel_state(const Program& program)
+{
+  this->os << "struct Pixel final" << std::endl;
+
+  this->os << "{" << std::endl;
+
+  this->increase_indent();
+
+  for (const auto* varyingVar : program.VaryingGlobalVars()) {
+
+    this->indent() << to_string(varyingVar->GetTypeID()) << " "
+                   << varyingVar->Identifier() << ";" << std::endl;
+  }
+
+  this->decrease_indent();
+
+  this->os << "};" << std::endl;
+}
+
+void
+cpp_generator::generate_frame_state(const Program& program)
+{
+  this->os << "struct Frame final" << std::endl;
+
+  this->os << "{" << std::endl;
+
+  this->increase_indent();
+
+  for (const auto* uniformVar : program.UniformGlobalVars()) {
+
+    this->indent() << to_string(uniformVar->GetTypeID()) << " "
+                   << uniformVar->Identifier() << ";" << std::endl;
+  }
+
+  this->decrease_indent();
+
+  this->os << "};" << std::endl;
+}
+
+void
+cpp_generator::generate_builtin_types(const Program& program)
+{
+  this->os << "template <typename scalar>" << std::endl;
+  this->os << "struct basic_vec2 final { scalar x, y; };" << std::endl;
+
+  this->blank();
+
+  this->os << "template <typename scalar>" << std::endl;
+  this->os << "struct basic_vec3 final { scalar x, y, z; };" << std::endl;
+
+  this->blank();
+
+  this->os << "template <typename scalar>" << std::endl;
+  this->os << "struct alignas(16) basic_vec4 final { scalar x, y, z, w; };"
+           << std::endl;
+
+  this->blank();
+
+  this->os << "using vec2 = basic_vec2<float>;" << std::endl;
+  this->os << "using vec3 = basic_vec3<float>;" << std::endl;
+  this->os << "using vec4 = basic_vec4<float>;" << std::endl;
+
+  this->blank();
+
+  this->os << "using vec2i = basic_vec2<std::int32_t>;" << std::endl;
+  this->os << "using vec3i = basic_vec3<std::int32_t>;" << std::endl;
+  this->os << "using vec4i = basic_vec4<std::int32_t>;" << std::endl;
+
+  this->blank();
+
+  this->os << "struct alignas(16) mat4 final { float data[16]; };" << std::endl;
+
+  this->blank();
+
+  this->generate_pixel_state(program);
+
+  this->blank();
+
+  this->generate_frame_state(program);
+
+  this->blank();
+
+  this->os << "void encode_framebuf(const framebuf& fb," << std::endl;
+  this->os << "                     unsigned char* rgb_buf," << std::endl;
+  this->os << "                     std::size_t x0," << std::endl;
+  this->os << "                     std::size_t y0," << std::endl;
+  this->os << "                     std::size_t x1," << std::endl;
+  this->os << "                     std::size_t y1) noexcept;" << std::endl;
+
+  this->blank();
+
+  this->generate_program_state(program);
+
+  this->blank();
+
+  this->os << "void run(const Program &program, framebuf &fb) noexcept;"
+           << std::endl;
+}
+
+void
+cpp_generator::generate(const Program& prg)
 {
   this->os << "#ifndef PT_H_INCLUDED" << std::endl;
   this->os << "#define PT_H_INCLUDED" << std::endl;

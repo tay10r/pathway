@@ -38,64 +38,79 @@ void update_loc(location* loc, const char* str, int len)
 
 %%
 
+"uniform" {
+  val->asVariability = Variability::Uniform;
+  return VARIABILITY;
+}
+
+"varying" {
+  val->asVariability = Variability::Varying;
+  return VARIABILITY;
+}
+
+"void" {
+  val->asTypeID = TypeID::Void;
+  return TYPE_NAME;
+}
+
 "bool" {
   val->asTypeID = TypeID::Bool;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "int" {
   val->asTypeID = TypeID::Int;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "float" {
   val->asTypeID = TypeID::Float;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "vec2" {
   val->asTypeID = TypeID::Vec2;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "vec3" {
   val->asTypeID = TypeID::Vec3;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "vec4" {
   val->asTypeID = TypeID::Vec4;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "vec2i" {
   val->asTypeID = TypeID::Vec2i;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "vec3i" {
   val->asTypeID = TypeID::Vec3i;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "vec4i" {
   val->asTypeID = TypeID::Vec4i;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "mat2" {
   val->asTypeID = TypeID::Mat2;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "mat3" {
   val->asTypeID = TypeID::Mat3;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "mat4" {
   val->asTypeID = TypeID::Mat4;
-  return TYPE;
+  return TYPE_NAME;
 }
 
 "return" { return RETURN; }

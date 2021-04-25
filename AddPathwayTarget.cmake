@@ -41,7 +41,7 @@ function(add_pathway_target)
   if(lang STREQUAL cxx)
 
     add_custom_command(OUTPUT "${ptc_opts_OUTPUT_FILE}"
-      COMMAND $<TARGET_FILE:ptc> "${ptc_opts_DIRECTORY}" --language "${lang}" -o "${ptc_opts_OUTPUT_FILE}")
+      COMMAND $<TARGET_FILE:ptc> "${ptc_opts_DIRECTORY}" --language "c++" -o "${ptc_opts_OUTPUT_FILE}")
 
   else(lang STREQUAL cxx)
     message(FATAL_ERROR "'${ptc_opts_LANGUAGE}' is not a supported language.")

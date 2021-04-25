@@ -23,6 +23,8 @@ add_executable(ptc
   common.cpp
   cpp_generator.h
   cpp_generator.cpp
+  resolve.h
+  resolve.cpp
   check.h
   check.cpp
   main.cpp)
