@@ -162,6 +162,18 @@ member_expr::GetType() const
   return base_expr->GetType();
 }
 
+bool
+Var::IsVaryingGlobal() const
+{
+  return mIsGlobal && mType->IsVaryingOrUnbound();
+}
+
+bool
+Var::IsUniformGlobal() const
+{
+  return mIsGlobal && mType->IsUniform();
+}
+
 namespace {
 
 class program_state_requirement_checker final : public stmt_visitor
@@ -209,9 +221,21 @@ func::requires_program_state() const
 }
 
 bool
-func::is_main() const noexcept
+func::IsEntryPoint() const
 {
-  return *this->name.identifier == "main";
+  return IsPixelSampler() || IsPixelEncoder();
+}
+
+bool
+func::IsPixelSampler() const
+{
+  return *this->name.identifier == "SamplePixel";
+}
+
+bool
+func::IsPixelEncoder() const
+{
+  return *this->name.identifier == "EncodePixel";
 }
 
 void

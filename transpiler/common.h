@@ -74,6 +74,17 @@ public:
 
   Variability GetVariability() const noexcept { return mVariability; }
 
+  bool IsVaryingOrUnbound() const noexcept
+  {
+    return (mVariability == Variability::Varying) ||
+           (mVariability == Variability::Uniform);
+  }
+
+  bool IsUniform() const noexcept
+  {
+    return mVariability == Variability::Uniform;
+  }
+
 private:
   TypeID mTypeID;
 
@@ -607,7 +618,11 @@ struct func final
 
   bool requires_program_state() const;
 
-  bool is_main() const noexcept;
+  bool IsEntryPoint() const;
+
+  bool IsPixelSampler() const;
+
+  bool IsPixelEncoder() const;
 };
 
 struct Var final
@@ -639,6 +654,10 @@ struct Var final
   }
 
   bool IsGlobal() const noexcept { return mIsGlobal; }
+
+  bool IsVaryingGlobal() const;
+
+  bool IsUniformGlobal() const;
 
   void MarkAsGlobal() { mIsGlobal = true; }
 

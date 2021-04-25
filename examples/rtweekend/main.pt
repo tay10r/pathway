@@ -1,7 +1,13 @@
 varying vec3 color;
 
-vec3
-main(vec2 uv)
+void
+SamplePixel(varying vec2 uv)
 {
-  return vec3(uv.x, uv.y, 1.0);
+  color = vec3(uv.xy, 1.0);
+}
+
+vec4
+EncodePixel()
+{
+  return vec4(color.xyz, 1.0);
 }

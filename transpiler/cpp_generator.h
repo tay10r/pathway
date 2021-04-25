@@ -90,8 +90,10 @@ private:
   {
     assert(v.resolved_var != nullptr);
 
-    if (v.resolved_var->IsGlobal())
-      this->os << "program.";
+    if (v.resolved_var->IsUniformGlobal())
+      this->os << "frame.";
+    else if (v.resolved_var->IsVaryingGlobal())
+      this->os << "pixel.";
 
     this->os << *v.name.identifier;
   }
@@ -151,9 +153,9 @@ private:
 
   void visit(const member_expr& e) override;
 
-  void generate_int_vec_swizzle(const member_expr& e);
+  void GenerateIntVectorSwizzle(const member_expr& e);
 
-  void generate_float_vec_swizzle(const member_expr& e);
+  void GenerateFloatVectorSwizzle(const member_expr& e);
 
   void generate_pixel_state(const Program& program);
 
@@ -165,12 +167,12 @@ private:
   {
     this->os << '(';
 
-    if (fn.requires_program_state() || fn.is_main()) {
+    if (fn.requires_program_state() || fn.IsEntryPoint()) {
 
       if (fn.requires_program_state())
-        this->os << "const Program& program";
+        this->os << "const Frame& frame";
       else
-        this->os << "const Program&";
+        this->os << "const Frame&";
 
       if (params.size() > 0)
         this->os << ", ";
@@ -191,46 +193,9 @@ private:
     this->os << ')';
   }
 
-  void generate_program_state(const Program& program)
-  {
-    this->os << "struct program final" << std::endl;
-
-    this->os << '{' << std::endl;
-
-    this->increase_indent();
-
-    const auto& globalVars = program.GlobalVars();
-
-    for (size_t i = 0; i < globalVars.size(); i++) {
-
-      const auto& v = *globalVars.at(i);
-
-      this->indent() << to_string(*v.mType) << " " << *v.name.identifier;
-
-      if (v.init_expr) {
-
-        this->os << " = ";
-
-        v.init_expr->accept(*this);
-      }
-
-      this->os << ';' << std::endl;
-
-      if ((i + 1) < globalVars.size())
-        this->blank();
-    }
-
-    this->decrease_indent();
-
-    this->os << "};" << std::endl;
-  }
-
   std::ostream& generate_header(const func& fn)
   {
-    if (fn.is_main())
-      this->os << "auto shader_main";
-    else
-      this->os << "auto " << *fn.name.identifier;
+    this->os << "auto " << *fn.name.identifier;
 
     this->generate(fn, *fn.params);
 

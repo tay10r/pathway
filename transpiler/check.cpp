@@ -33,9 +33,16 @@ struct check_context final
     return this->es;
   }
 
-  void missing_entry_point()
+  void MissingPixelSampler()
   {
-    this->es << path << ": missing entry point 'main'" << std::endl;
+    this->es << path << ": missing entry point 'SamplePixel'" << std::endl;
+
+    this->error_count++;
+  }
+
+  void MissingPixelEncoder()
+  {
+    this->es << path << ": missing entry point 'EncodePixel'" << std::endl;
 
     this->error_count++;
   }
@@ -112,35 +119,52 @@ public:
 
   void check_entry_point()
   {
-    const func* entry = nullptr;
+    const func* pixelSampler = nullptr;
+    const func* pixelEncoder = nullptr;
 
     for (const auto& fn : this->ctx.program.Funcs()) {
 
-      if (!fn->is_main())
+      if (fn->IsPixelSampler()) {
+        if (pixelSampler) {
+          ctx.emit_error(fn->name.loc)
+            << "only one declaration of '" << *fn->name.identifier
+            << "' can exist" << std::endl;
+        } else {
+          pixelSampler = fn.get();
+        }
         continue;
-
-      if (entry) {
-
-        ctx.emit_error(fn->name.loc)
-          << "only one declaration of 'main' can exist." << std::endl;
-
-        return;
       }
 
-      check_entry_point_signature(*fn);
-
-      entry = fn.get();
+      if (fn->IsPixelEncoder()) {
+        if (pixelEncoder) {
+          ctx.emit_error(fn->name.loc)
+            << "only one declaration of '" << *fn->name.identifier
+            << "' can exist" << std::endl;
+        } else {
+          pixelEncoder = fn.get();
+        }
+        continue;
+      }
     }
 
-    if (!entry)
-      ctx.missing_entry_point();
+    if (pixelSampler) {
+      CheckPixelSamplerSignature(*pixelSampler);
+    } else {
+      ctx.MissingPixelSampler();
+    }
+
+    if (pixelEncoder) {
+      CheckPixelEncoderSignature(*pixelEncoder);
+    } else {
+      ctx.MissingPixelEncoder();
+    }
   }
 
-  void check_entry_point_signature(const func& fn)
+  void CheckPixelSamplerSignature(const func& fn)
   {
-    if (*fn.mReturnType != TypeID::Vec3) {
+    if (*fn.mReturnType != TypeID::Void) {
       this->ctx.emit_error(fn.name.loc)
-        << "return type should be type 'vec3'" << std::endl;
+        << "return type should be type 'void'" << std::endl;
     }
 
     if (fn.params->size() != 1) {
@@ -154,6 +178,19 @@ public:
     if (*fn.params->at(0)->mType != TypeID::Vec2) {
       this->ctx.emit_error(fn.name.loc)
         << "parameter should be type 'vec2'" << std::endl;
+    }
+  }
+
+  void CheckPixelEncoderSignature(const func& fn)
+  {
+    if (*fn.mReturnType != TypeID::Vec4) {
+      this->ctx.emit_error(fn.name.loc)
+        << "return type should be type 'vec4'" << std::endl;
+    }
+
+    if (fn.params->size() != 0) {
+      this->ctx.emit_error(fn.name.loc)
+        << "there should be no parameters to this function." << std::endl;
     }
   }
 

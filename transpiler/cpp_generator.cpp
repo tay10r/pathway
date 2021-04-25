@@ -5,101 +5,75 @@ namespace {
 const char* standard_impl = R"(
 namespace {
 
-float clamp(float x, float min, float max) noexcept
+template <typename T>
+constexpr T
+Clamp(T x, T min, T max) noexcept
 {
   x = (x < max) ? x : max;
   x = (x > min) ? x : min;
   return x;
 }
 
+void
+SamplePixel(const Frame& frame, Pixel& pixel, vec2 uv) noexcept;
+
+vec3
+ExportPixel(const Frame& frame, const Pixel& pixel) noexcept;
+
 } // namespace
 
-struct pixel_state final
+void
+Frame::Resize(std::size_t w, std::size_t h)
 {
-  float r;
-  float g;
-  float b;
-};
-
-struct framebuf final
-{
-  std::vector<pixel_state> pixels;
-  std::size_t w = 0;
-  std::size_t h = 0;
-};
-
-auto create_framebuf() -> framebuf*
-{
-  return new framebuf();
+  mPixels.resize(w * h);
+  mWidth = w;
+  mHeight = h;
 }
 
-void destroy_framebuf(framebuf* fb)
+void
+Frame::Export(float* rgbBuffer) const noexcept
 {
-  delete fb;
-}
+  for (std::size_t y = 0; y < mHeight; y++) {
 
-void resize_framebuf(framebuf& fb, std::size_t w, std::size_t h)
-{
-  fb.pixels.resize(w * h);
-  fb.w = w;
-  fb.h = h;
-}
+    for (std::size_t x = 0; x < mWidth; x++) {
 
-void encode_framebuf(const framebuf& fb,
-                     unsigned char* rgb_buf,
-                     std::size_t x0,
-                     std::size_t y0,
-                     std::size_t x1,
-                     std::size_t y1) noexcept
-{
-  x0 = (x0 < fb.w) ? x0 : fb.w;
-  y0 = (y0 < fb.h) ? y0 : fb.h;
+      const auto& pixel = mPixels[(y * mWidth) + x];
 
-  x1 = (x1 < fb.w) ? x1 : fb.w;
-  y1 = (y1 < fb.h) ? y1 : fb.h;
+      vec3 color = ExportPixel(*this, pixel);
 
-  for (std::size_t y = y0; y < y1; y++) {
+      rgbBuffer[0] = Clamp(color.x * 255.0f, 0.0f, 255.0f);
+      rgbBuffer[1] = Clamp(color.y * 255.0f, 0.0f, 255.0f);
+      rgbBuffer[2] = Clamp(color.z * 255.0f, 0.0f, 255.0f);
 
-    for (std::size_t x = x0; x < x1; x++) {
-
-      const auto& px = fb.pixels[(y * fb.w) + x];
-
-      rgb_buf[0] = clamp(px.r * 255.0f, 0.0f, 255.0f);
-      rgb_buf[1] = clamp(px.g * 255.0f, 0.0f, 255.0f);
-      rgb_buf[2] = clamp(px.b * 255.0f, 0.0f, 255.0f);
-
-      rgb_buf += 3;
+      rgbBuffer += 3;
     }
   }
 }
 
-void run(const program& prg, framebuf& fb) noexcept
+void
+Frame::Sample() noexcept
 {
-  for (std::size_t y = 0; y < fb.h; y++) {
+  for (std::size_t y = 0; y < mHeight; y++) {
 
-    for (std::size_t x = 0; x < fb.w; x++) {
+    for (std::size_t x = 0; x < mWidth; x++) {
 
       vec2 uv {
-        (x + 0.5f) / fb.w,
-        (y + 0.5f) / fb.h
+        (x + 0.5f) / mWidth,
+        (y + 0.5f) / mHeight
       };
 
-      vec3 color = shader_main(prg, uv);
+      Pixel& pixel = mPixels[(y * mWidth) + x];
 
-      pixel_state& px = fb.pixels[(y * fb.w) + x];
-
-      px.r += color.x;
-      px.g += color.y;
-      px.b += color.z;
+      SamplePixel(*this, pixel, uv);
     }
   }
 }
 
 template <std::size_t index>
-struct vector_member final { };
+struct VectorMember final { };
 
 template <>
-struct vector_member<std::size_t(0)> final
+struct VectorMember<std::size_t(0)> final
 {
   template <typename vector_type>
   static constexpr auto get(vector_type v) noexcept
@@ -109,7 +83,7 @@ struct vector_member<std::size_t(0)> final
 };
 
 template <>
-struct vector_member<std::size_t(1)> final
+struct VectorMember<std::size_t(1)> final
 {
   template <typename vector_type>
   static constexpr auto get(vector_type v) noexcept
@@ -119,7 +93,7 @@ struct vector_member<std::size_t(1)> final
 };
 
 template <>
-struct vector_member<std::size_t(2)> final
+struct VectorMember<std::size_t(2)> final
 {
   template <typename vector_type>
   static constexpr auto get(vector_type v) noexcept
@@ -129,7 +103,7 @@ struct vector_member<std::size_t(2)> final
 };
 
 template <>
-struct vector_member<std::size_t(3)> final
+struct VectorMember<std::size_t(3)> final
 {
   template <typename vector_type>
   static constexpr auto get(vector_type v) noexcept
@@ -143,16 +117,16 @@ template <typename dst_type,
           std::size_t b,
           std::size_t c,
           std::size_t d>
-struct swizzle4 final
+struct Swizzle4 final
 {
   template <typename src_type>
   static constexpr dst_type get(src_type in) noexcept
   {
     return {
-      vector_member<a>::get(in),
-      vector_member<b>::get(in),
-      vector_member<c>::get(in),
-      vector_member<d>::get(in)
+      VectorMember<a>::get(in),
+      VectorMember<b>::get(in),
+      VectorMember<c>::get(in),
+      VectorMember<d>::get(in)
     };
   }
 };
@@ -161,15 +135,15 @@ template <typename dst_type,
           std::size_t a,
           std::size_t b,
           std::size_t c>
-struct swizzle3 final
+struct Swizzle3 final
 {
   template <typename src_type>
   static constexpr dst_type get(src_type in) noexcept
   {
     return {
-      vector_member<a>::get(in),
-      vector_member<b>::get(in),
-      vector_member<c>::get(in)
+      VectorMember<a>::get(in),
+      VectorMember<b>::get(in),
+      VectorMember<c>::get(in)
     };
   }
 };
@@ -177,25 +151,25 @@ struct swizzle3 final
 template <typename dst_type,
           std::size_t a,
           std::size_t b>
-struct swizzle2 final
+struct Swizzle2 final
 {
   template <typename src_type>
   static constexpr dst_type get(src_type in) noexcept
   {
     return {
-      vector_member<a>::get(in),
-      vector_member<b>::get(in)
+      VectorMember<a>::get(in),
+      VectorMember<b>::get(in)
     };
   }
 };
 
 template <typename dst_type, std::size_t a>
-struct swizzle1 final
+struct Swizzle1 final
 {
   template <typename src_type>
   static constexpr dst_type get(src_type in) noexcept
   {
-    return vector_member<a>::get(in);
+    return VectorMember<a>::get(in);
   }
 };
 )";
@@ -203,27 +177,27 @@ struct swizzle1 final
 } // namespace
 
 void
-cpp_generator::generate_int_vec_swizzle(const member_expr& e)
+cpp_generator::GenerateIntVectorSwizzle(const member_expr& e)
 {
   swizzle s(*e.member_name.identifier);
 
   switch (s.member_indices.size()) {
     case 1:
-      this->os << "swizzle1<int, ";
+      this->os << "Swizzle1<int, ";
       this->os << s.member_indices[0];
       this->os << ">::get(";
       e.base_expr->accept(*this);
       this->os << ")";
       break;
     case 2:
-      this->os << "swizzle2<vec2i, ";
+      this->os << "Swizzle2<vec2i, ";
       this->os << s.member_indices[0] << ", " << s.member_indices[1];
       this->os << ">::get(";
       e.base_expr->accept(*this);
       this->os << ")";
       break;
     case 3:
-      this->os << "swizzle3<vec3i, ";
+      this->os << "Swizzle3<vec3i, ";
       this->os << s.member_indices[0] << ", " << s.member_indices[1];
       this->os << ", " << s.member_indices[2];
       this->os << ">::get(";
@@ -231,7 +205,7 @@ cpp_generator::generate_int_vec_swizzle(const member_expr& e)
       this->os << ")";
       break;
     case 4:
-      this->os << "swizzle4<vec4i, ";
+      this->os << "Swizzle4<vec4i, ";
       this->os << s.member_indices[0] << ", " << s.member_indices[1];
       this->os << ", " << s.member_indices[2] << ", " << s.member_indices[3];
       this->os << ">::get(";
@@ -242,27 +216,27 @@ cpp_generator::generate_int_vec_swizzle(const member_expr& e)
 }
 
 void
-cpp_generator::generate_float_vec_swizzle(const member_expr& e)
+cpp_generator::GenerateFloatVectorSwizzle(const member_expr& e)
 {
   swizzle s(*e.member_name.identifier);
 
   switch (s.member_indices.size()) {
     case 1:
-      this->os << "swizzle1<float, ";
+      this->os << "Swizzle1<float, ";
       this->os << s.member_indices[0];
       this->os << ">::get(";
       e.base_expr->accept(*this);
       this->os << ")";
       break;
     case 2:
-      this->os << "swizzle2<vec2, ";
+      this->os << "Swizzle2<vec2, ";
       this->os << s.member_indices[0] << ", " << s.member_indices[1];
       this->os << ">::get(";
       e.base_expr->accept(*this);
       this->os << ")";
       break;
     case 3:
-      this->os << "swizzle3<vec3, ";
+      this->os << "Swizzle3<vec3, ";
       this->os << s.member_indices[0] << ", " << s.member_indices[1];
       this->os << ", " << s.member_indices[2];
       this->os << ">::get(";
@@ -270,7 +244,7 @@ cpp_generator::generate_float_vec_swizzle(const member_expr& e)
       this->os << ")";
       break;
     case 4:
-      this->os << "swizzle4<vec4, ";
+      this->os << "Swizzle4<vec4, ";
       this->os << s.member_indices[0] << ", " << s.member_indices[1];
       this->os << ", " << s.member_indices[2] << ", " << s.member_indices[3];
       this->os << ">::get(";
@@ -296,12 +270,12 @@ cpp_generator::visit(const member_expr& e)
     case TypeID::Vec2:
     case TypeID::Vec3:
     case TypeID::Vec4:
-      generate_float_vec_swizzle(e);
+      GenerateFloatVectorSwizzle(e);
       break;
     case TypeID::Vec2i:
     case TypeID::Vec3i:
     case TypeID::Vec4i:
-      generate_int_vec_swizzle(e);
+      GenerateIntVectorSwizzle(e);
       break;
   }
 }
@@ -338,8 +312,35 @@ cpp_generator::generate_frame_state(const Program& program)
   for (const auto* uniformVar : program.UniformGlobalVars()) {
 
     this->indent() << to_string(uniformVar->GetTypeID()) << " "
-                   << uniformVar->Identifier() << ";" << std::endl;
+                   << uniformVar->Identifier();
+
+    if (uniformVar->init_expr) {
+
+      this->os << " = ";
+
+      uniformVar->init_expr->accept(*this);
+    }
+
+    this->os << ";" << std::endl;
   }
+
+  this->indent() << "void Export(float* rgbBuffer) const noexcept;"
+                 << std::endl;
+
+  this->indent() << "void Sample() noexcept;" << std::endl;
+  this->indent() << "void Resize(std::size_t w, std::size_t h);" << std::endl;
+
+  this->decrease_indent();
+
+  this->indent() << "private:" << std::endl;
+
+  this->increase_indent();
+
+  this->indent() << "std::vector<Pixel> mPixels;" << std::endl;
+
+  this->indent() << "std::size_t mWidth = 0;" << std::endl;
+
+  this->indent() << "std::size_t mHeight = 0;" << std::endl;
 
   this->decrease_indent();
 
@@ -389,21 +390,16 @@ cpp_generator::generate_builtin_types(const Program& program)
 
   this->blank();
 
-  this->os << "void encode_framebuf(const framebuf& fb," << std::endl;
-  this->os << "                     unsigned char* rgb_buf," << std::endl;
-  this->os << "                     std::size_t x0," << std::endl;
-  this->os << "                     std::size_t y0," << std::endl;
-  this->os << "                     std::size_t x1," << std::endl;
-  this->os << "                     std::size_t y1) noexcept;" << std::endl;
+  this->os << "void" << std::endl;
+  this->os << "SampleFrame(Frame& frame) noexcept;" << std::endl;
 
   this->blank();
 
-  this->generate_program_state(program);
-
-  this->blank();
-
-  this->os << "void run(const Program &program, framebuf &fb) noexcept;"
+  this->os << "void" << std::endl;
+  this->os << "ExportFrame(const Frame& frame, float* rgbBuffer) noexcept;"
            << std::endl;
+
+  this->blank();
 }
 
 void
@@ -411,6 +407,10 @@ cpp_generator::generate(const Program& prg)
 {
   this->os << "#ifndef PT_H_INCLUDED" << std::endl;
   this->os << "#define PT_H_INCLUDED" << std::endl;
+
+  this->blank();
+
+  this->os << "#include <vector>" << std::endl;
 
   this->blank();
 
@@ -451,7 +451,8 @@ cpp_generator::generate(const Program& prg)
 
   this->blank();
 
-  this->os << "vec3 shader_main(const program& prg, vec2 uv) noexcept;"
+  this->os << "void" << std::endl;
+  this->os << "SamplePixel(Frame& frame, Pixel& pixel, vec2 uv) noexcept;"
            << std::endl;
 
   this->blank();
