@@ -1,4 +1,10 @@
-varying vec3 color;
+varying vec3 color = vec3(0.0, 0.0, 0.0);
+
+float
+IntersectUnitSphere(vec3 rayOrig, vec3 rayDir)
+{
+  return 0.0;
+}
 
 void
 SamplePixel(varying vec2 uv)

@@ -1,0 +1,19 @@
+varying vec3 gPixelColor;
+
+uniform vec3 gBgColor1 = vec3(1.0, 1.0, 1.0);
+
+uniform vec3 gBgColor2 = vec3(0.5, 0.7, 1.0);
+
+void
+SamplePixel(vec2 uv)
+{
+  float t = uv.y;
+
+  gPixelColor = (1.0 - t) * gBgColor1 + t * gBgColor2;
+}
+
+vec4
+EncodePixel()
+{
+  return vec4(gPixelColor.xyz, 1.0);
+}

@@ -122,36 +122,11 @@ private:
     }
   }
 
-  void visit(const binary_expr& e) override
-  {
-    e.left->accept(*this);
-
-    this->os << ' ';
-
-    switch (e.k) {
-      case binary_expr::kind::ADD:
-        this->os << '+';
-        break;
-      case binary_expr::kind::SUB:
-        this->os << '-';
-        break;
-      case binary_expr::kind::MUL:
-        this->os << '*';
-        break;
-      case binary_expr::kind::DIV:
-        this->os << '/';
-        break;
-      case binary_expr::kind::MOD:
-        this->os << '%';
-        break;
-    }
-
-    this->os << ' ';
-
-    e.right->accept(*this);
-  }
+  void visit(const binary_expr& e) override { GenerateBinaryExpr(e); }
 
   void visit(const member_expr& e) override;
+
+  void GenerateBinaryExpr(const binary_expr&);
 
   void GenerateIntVectorSwizzle(const member_expr& e);
 
@@ -163,43 +138,15 @@ private:
 
   void generate_builtin_types(const Program& program);
 
-  void generate(const func& fn, const param_list& params)
+  void generate(const Func& fn, const param_list& params);
+
+  std::ostream& generate_header(const Func& fn)
   {
-    this->os << '(';
+    this->os << "auto " << fn.Identifier();
 
-    if (fn.requires_program_state() || fn.IsEntryPoint()) {
+    this->generate(fn, fn.ParamList());
 
-      if (fn.requires_program_state())
-        this->os << "const Frame& frame";
-      else
-        this->os << "const Frame&";
-
-      if (params.size() > 0)
-        this->os << ", ";
-    }
-
-    for (size_t i = 0; i < params.size(); i++) {
-
-      this->os << this->to_string(*params.at(i)->mType);
-
-      this->os << ' ';
-
-      this->os << *params.at(i)->name.identifier;
-
-      if ((i + 1) < params.size())
-        this->os << ',';
-    }
-
-    this->os << ')';
-  }
-
-  std::ostream& generate_header(const func& fn)
-  {
-    this->os << "auto " << *fn.name.identifier;
-
-    this->generate(fn, *fn.params);
-
-    this->os << " noexcept -> " << this->to_string(*fn.mReturnType);
+    this->os << " noexcept -> " << this->to_string(fn.ReturnType());
 
     return this->os;
   }
@@ -220,7 +167,7 @@ private:
 
       this->generate_header(*fn) << std::endl;
 
-      fn->body->accept(*this);
+      fn->AcceptBodyAccessor(*this);
 
       this->blank();
     }

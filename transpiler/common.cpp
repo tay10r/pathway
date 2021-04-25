@@ -43,18 +43,33 @@ operator<<(std::ostream& os, TypeID typeID)
   return os;
 }
 
+std::ostream&
+operator<<(std::ostream& os, Variability variability)
+{
+  switch (variability) {
+    case Variability::Unbound:
+      return os << "unbound";
+    case Variability::Varying:
+      return os << "varying";
+    case Variability::Uniform:
+      return os << "uniform";
+  }
+
+  return os;
+}
+
+std::ostream&
+operator<<(std::ostream& os, const Type& type)
+{
+  return os << type.GetVariability() << ' ' << type.ID();
+}
+
 Type
 var_ref::GetType() const
 {
   assert(this->resolved_var != nullptr);
 
   return *this->resolved_var->mType;
-}
-
-bool
-var_ref::references_global_var() const
-{
-  return resolved_var ? resolved_var->IsGlobal() : false;
 }
 
 swizzle::swizzle(const std::string& pattern)
@@ -162,6 +177,70 @@ member_expr::GetType() const
   return base_expr->GetType();
 }
 
+namespace {
+
+class CommonTypeInfo final
+{
+public:
+  constexpr CommonTypeInfo(TypeID typeA, TypeID typeB, TypeID commonType)
+    : mTypeA(typeA)
+    , mTypeB(typeB)
+    , mCommonType(commonType)
+  {}
+
+  constexpr bool Match(TypeID a, TypeID b) const noexcept
+  {
+    if ((mTypeA == a) && (mTypeB == b))
+      return true;
+
+    if ((mTypeA == b) && (mTypeB == a))
+      return true;
+
+    return false;
+  }
+
+  constexpr TypeID CommonType() const noexcept { return mCommonType; }
+
+private:
+  TypeID mTypeA;
+  TypeID mTypeB;
+  TypeID mCommonType;
+};
+
+const std::array<CommonTypeInfo, 11> gCommonTypeTable{
+  { // basic conversions
+    CommonTypeInfo(TypeID::Int, TypeID::Bool, TypeID::Int),
+    CommonTypeInfo(TypeID::Float, TypeID::Int, TypeID::Float),
+    // int and vectors
+    CommonTypeInfo(TypeID::Int, TypeID::Vec2i, TypeID::Vec2i),
+    CommonTypeInfo(TypeID::Int, TypeID::Vec3i, TypeID::Vec3i),
+    CommonTypeInfo(TypeID::Int, TypeID::Vec4i, TypeID::Vec4i),
+    /// float and vectors
+    CommonTypeInfo(TypeID::Float, TypeID::Vec2, TypeID::Vec2),
+    CommonTypeInfo(TypeID::Float, TypeID::Vec3, TypeID::Vec3),
+    CommonTypeInfo(TypeID::Float, TypeID::Vec4, TypeID::Vec4),
+    // float and matrices
+    CommonTypeInfo(TypeID::Float, TypeID::Mat2, TypeID::Mat2),
+    CommonTypeInfo(TypeID::Float, TypeID::Mat3, TypeID::Mat3),
+    CommonTypeInfo(TypeID::Float, TypeID::Mat4, TypeID::Mat4) }
+};
+
+} // namespace
+
+Type
+binary_expr::GetType() const
+{
+  if (left->GetType() == right->GetType())
+    return left->GetType();
+
+  for (const auto& commonTypeEntry : gCommonTypeTable) {
+    if (commonTypeEntry.Match(left->GetType().ID(), right->GetType().ID()))
+      return Type(commonTypeEntry.CommonType());
+  }
+
+  assert(false);
+}
+
 bool
 Var::IsVaryingGlobal() const
 {
@@ -176,27 +255,81 @@ Var::IsUniformGlobal() const
 
 namespace {
 
-class program_state_requirement_checker final : public stmt_visitor
+class ExprGlobalStateReferenceChecker final : public expr_visitor
 {
 public:
-  bool RequirementFlag() const noexcept { return mRequirementFlag; }
+  bool ReferencesFrameState() const noexcept { return mReferencesFrameState; }
+  bool ReferencesPixelState() const noexcept { return mReferencesPixelState; }
+
+  void visit(const bool_literal&) override {}
+  void visit(const int_literal&) override {}
+  void visit(const float_literal&) override {}
+
+  void visit(const binary_expr& binaryExpr) override
+  {
+    binaryExpr.Recurse(*this);
+  }
+
+  void visit(const unary_expr& unaryExpr) override { unaryExpr.Recurse(*this); }
+
+  void visit(const group_expr& groupExpr) override { groupExpr.Recurse(*this); }
+
+  void visit(const var_ref& varRef) override
+  {
+    if (!varRef.HasResolvedVar())
+      return;
+
+    const auto& var = varRef.ResolvedVar();
+
+    if (!var.IsGlobal())
+      return;
+
+    switch (var.GetVariability()) {
+      case Variability::Unbound:
+      case Variability::Varying:
+        mReferencesPixelState |= true;
+        break;
+      case Variability::Uniform:
+        mReferencesFrameState |= true;
+        break;
+    }
+  }
+
+  void visit(const type_constructor& typeConstructor) override
+  {
+    typeConstructor.Recurse(*this);
+  }
+
+  void visit(const member_expr& memberExpr) override
+  {
+    memberExpr.Recurse(*this);
+  }
+
+private:
+  bool mReferencesFrameState = false;
+  bool mReferencesPixelState = false;
+};
+
+class StmtGlobalStateReferenceChecker final : public stmt_visitor
+{
+public:
+  bool ReferencesFrameState() const noexcept { return mReferencesFrameState; }
+
+  bool ReferencesPixelState() const noexcept { return mReferencesPixelState; }
 
   void visit(const AssignmentStmt& assignmentStmt) override
   {
-    mRequirementFlag |= assignmentStmt.LValue().references_global_var() ||
-                        assignmentStmt.RValue().references_global_var();
+    CheckExpr(assignmentStmt.LValue());
+    CheckExpr(assignmentStmt.RValue());
   }
 
   void visit(const decl_stmt& s) override
   {
     if (s.v->init_expr)
-      mRequirementFlag |= s.v->init_expr->references_global_var();
+      CheckExpr(*s.v->init_expr);
   }
 
-  void visit(const return_stmt& s) override
-  {
-    mRequirementFlag |= s.return_value->references_global_var();
-  }
+  void visit(const return_stmt& s) override { CheckExpr(*s.return_value); }
 
   void visit(const compound_stmt& s) override
   {
@@ -205,37 +338,64 @@ public:
   }
 
 private:
-  bool mRequirementFlag = false;
+  void CheckExpr(const expr& e)
+  {
+    ExprGlobalStateReferenceChecker checker;
+
+    e.accept(checker);
+
+    mReferencesFrameState |= checker.ReferencesFrameState();
+    mReferencesPixelState |= checker.ReferencesPixelState();
+  }
+
+  bool mReferencesFrameState = false;
+  bool mReferencesPixelState = false;
 };
 
 } // namespace
 
 bool
-func::requires_program_state() const
+Func::ReferencesFrameState() const
 {
-  program_state_requirement_checker checker;
+  StmtGlobalStateReferenceChecker checker;
 
-  this->body->accept(checker);
+  this->mBody->accept(checker);
 
-  return checker.RequirementFlag();
+  return checker.ReferencesFrameState();
 }
 
 bool
-func::IsEntryPoint() const
+Func::ReferencesPixelState() const
+{
+  StmtGlobalStateReferenceChecker checker;
+
+  this->mBody->accept(checker);
+
+  return checker.ReferencesPixelState();
+}
+
+bool
+Func::ReferencesGlobalState() const
+{
+  return ReferencesFrameState() || ReferencesPixelState();
+}
+
+bool
+Func::IsEntryPoint() const
 {
   return IsPixelSampler() || IsPixelEncoder();
 }
 
 bool
-func::IsPixelSampler() const
+Func::IsPixelSampler() const
 {
-  return *this->name.identifier == "SamplePixel";
+  return *this->mName.identifier == "SamplePixel";
 }
 
 bool
-func::IsPixelEncoder() const
+Func::IsPixelEncoder() const
 {
-  return *this->name.identifier == "EncodePixel";
+  return *this->mName.identifier == "EncodePixel";
 }
 
 void

@@ -1,0 +1,13 @@
+vec3 color;
+
+void
+SamplePixel(vec2 uv)
+{
+  color = vec3(uv.xy, 1.0);
+}
+
+vec4
+EncodePixel()
+{
+  return vec4(color.xyz, 1.0);
+}

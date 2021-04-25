@@ -53,11 +53,11 @@ private:
   std::ostream& es;
 };
 
-class return_type_checker final : public stmt_visitor
+class ReturnStmtTypeChecker final : public stmt_visitor
 {
 public:
-  return_type_checker(Type returnType, check_context& ctx_)
-    : mReturnType(returnType)
+  ReturnStmtTypeChecker(Type expectedReturnType, check_context& ctx_)
+    : mExpectedReturnType(expectedReturnType)
     , ctx(ctx_)
   {}
 
@@ -75,15 +75,15 @@ public:
   {
     const auto& ret_value = *s.return_value;
 
-    if (!(ret_value.GetType() == mReturnType)) {
+    if (ret_value.GetType() != mExpectedReturnType) {
       this->ctx.emit_error(ret_value.loc)
-        << "expression should return type '" << mReturnType.ID() << "' not '"
-        << ret_value.GetType().ID() << "'" << std::endl;
+        << "expression should return type '" << mExpectedReturnType << "' not '"
+        << ret_value.GetType() << "'" << std::endl;
     }
   }
 
 private:
-  Type mReturnType;
+  Type mExpectedReturnType;
 
   check_context& ctx;
 };
@@ -99,7 +99,7 @@ public:
   {
     run_type_checks();
 
-    check_entry_point();
+    CheckEntryPoints();
   }
 
   void run_type_checks()
@@ -110,38 +110,38 @@ public:
     // TODO : global vars
   }
 
-  void type_check(const func& fn)
+  void type_check(const Func& func)
   {
-    return_type_checker ret_checker(*fn.mReturnType, this->ctx);
+    ReturnStmtTypeChecker returnStmtTypeChecker(func.ReturnType(), this->ctx);
 
-    fn.body->accept(ret_checker);
+    func.AcceptBodyAccessor(returnStmtTypeChecker);
   }
 
-  void check_entry_point()
+  void CheckEntryPoints()
   {
-    const func* pixelSampler = nullptr;
-    const func* pixelEncoder = nullptr;
+    const Func* pixelSampler = nullptr;
+    const Func* pixelEncoder = nullptr;
 
-    for (const auto& fn : this->ctx.program.Funcs()) {
+    for (const auto& func : this->ctx.program.Funcs()) {
 
-      if (fn->IsPixelSampler()) {
+      if (func->IsPixelSampler()) {
         if (pixelSampler) {
-          ctx.emit_error(fn->name.loc)
-            << "only one declaration of '" << *fn->name.identifier
+          ctx.emit_error(func->GetNameLocation())
+            << "only one declaration of '" << func->Identifier()
             << "' can exist" << std::endl;
         } else {
-          pixelSampler = fn.get();
+          pixelSampler = func.get();
         }
         continue;
       }
 
-      if (fn->IsPixelEncoder()) {
+      if (func->IsPixelEncoder()) {
         if (pixelEncoder) {
-          ctx.emit_error(fn->name.loc)
-            << "only one declaration of '" << *fn->name.identifier
+          ctx.emit_error(func->GetNameLocation())
+            << "only one declaration of '" << func->Identifier()
             << "' can exist" << std::endl;
         } else {
-          pixelEncoder = fn.get();
+          pixelEncoder = func.get();
         }
         continue;
       }
@@ -160,36 +160,36 @@ public:
     }
   }
 
-  void CheckPixelSamplerSignature(const func& fn)
+  void CheckPixelSamplerSignature(const Func& fn)
   {
-    if (*fn.mReturnType != TypeID::Void) {
-      this->ctx.emit_error(fn.name.loc)
+    if (fn.ReturnType() != TypeID::Void) {
+      this->ctx.emit_error(fn.GetNameLocation())
         << "return type should be type 'void'" << std::endl;
     }
 
-    if (fn.params->size() != 1) {
-      this->ctx.emit_error(fn.name.loc)
+    if (fn.ParamList().size() != 1) {
+      this->ctx.emit_error(fn.GetNameLocation())
         << "there should only be one parameter to this function." << std::endl;
     }
 
-    if (fn.params->size() < 1)
+    if (fn.ParamList().size() < 1)
       return;
 
-    if (*fn.params->at(0)->mType != TypeID::Vec2) {
-      this->ctx.emit_error(fn.name.loc)
+    if (*fn.ParamList().at(0)->mType != TypeID::Vec2) {
+      this->ctx.emit_error(fn.GetNameLocation())
         << "parameter should be type 'vec2'" << std::endl;
     }
   }
 
-  void CheckPixelEncoderSignature(const func& fn)
+  void CheckPixelEncoderSignature(const Func& fn)
   {
-    if (*fn.mReturnType != TypeID::Vec4) {
-      this->ctx.emit_error(fn.name.loc)
+    if (fn.ReturnType() != TypeID::Vec4) {
+      this->ctx.emit_error(fn.GetNameLocation())
         << "return type should be type 'vec4'" << std::endl;
     }
 
-    if (fn.params->size() != 0) {
-      this->ctx.emit_error(fn.name.loc)
+    if (!fn.ParamList().empty()) {
+      this->ctx.emit_error(fn.GetNameLocation())
         << "there should be no parameters to this function." << std::endl;
     }
   }

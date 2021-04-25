@@ -165,18 +165,18 @@ private:
 };
 
 void
-ResolveFunc(Program& program, func& fn)
+ResolveFunc(Program& program, Func& fn)
 {
   SymbolTable symbolTable(program);
 
   symbolTable.EnterScope();
 
-  for (const auto& p : *fn.params)
+  for (const auto& p : fn.ParamList())
     symbolTable.Define(p.get());
 
   StmtSymbolResolver resolver(symbolTable);
 
-  fn.body->AcceptMutator(resolver);
+  fn.AcceptBodyMutator(resolver);
 
   symbolTable.ExitScope();
 }

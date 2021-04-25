@@ -161,20 +161,20 @@ param_list: param_decl
             $$ = new param_list();
             $$->emplace_back($1);
           }
-          | param_list param_decl
+          | param_list ',' param_decl
           {
             $$ = $1;
-            $$->emplace_back($2);
+            $$->emplace_back($3);
           }
           ;
 
 func: type IDENTIFIER '(' param_list ')' compound_stmt
     {
-      $$ = new func($1, decl_name($2, @2), $4, $6);
+      $$ = new Func($1, decl_name($2, @2), $4, $6);
     }
     | type IDENTIFIER '(' ')' compound_stmt
     {
-      $$ = new func($1, decl_name($2, @2), new param_list(), $5);
+      $$ = new Func($1, decl_name($2, @2), new param_list(), $5);
     }
     ;
 

@@ -8,25 +8,21 @@
 int
 main()
 {
-  auto fb = pt::create_framebuf();
+  pt::Frame frame;
 
-  pt::resize_framebuf(*fb, 640, 480);
+  frame.Resize(640, 480);
 
-  pt::program prg;
+  frame.Sample();
 
-  pt::run(prg, *fb);
+  std::vector<unsigned char> colorBuffer(640 * 480 * 3);
 
-  std::vector<unsigned char> colorbuf(640 * 480 * 3);
-
-  pt::encode_framebuf(*fb, colorbuf.data(), 0, 0, 640, 480);
-
-  pt::destroy_framebuf(fb);
+  frame.EncodeRGB(colorBuffer.data());
 
   std::ofstream file("rtweekend.ppm");
 
   file << "P6\n640 480\n255\n";
 
-  file.write((const char*)colorbuf.data(), colorbuf.size());
+  file.write((const char*)colorBuffer.data(), colorBuffer.size());
 
   return 0;
 }

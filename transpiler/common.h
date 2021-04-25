@@ -53,6 +53,9 @@ enum class Variability
   Varying
 };
 
+std::ostream&
+operator<<(std::ostream&, Variability variability);
+
 class Type final
 {
 public:
@@ -72,12 +75,17 @@ public:
     return (mTypeID == other.mTypeID) && (mVariability == other.mVariability);
   }
 
+  bool operator!=(const Type& other) const noexcept
+  {
+    return (mTypeID != other.mTypeID) || (mVariability != other.mVariability);
+  }
+
   Variability GetVariability() const noexcept { return mVariability; }
 
   bool IsVaryingOrUnbound() const noexcept
   {
     return (mVariability == Variability::Varying) ||
-           (mVariability == Variability::Uniform);
+           (mVariability == Variability::Unbound);
   }
 
   bool IsUniform() const noexcept
@@ -90,6 +98,9 @@ private:
 
   Variability mVariability;
 };
+
+std::ostream&
+operator<<(std::ostream&, const Type& type);
 
 struct decl_name final
 {
@@ -173,8 +184,6 @@ struct expr
 
   virtual void accept(expr_visitor& v) const = 0;
 
-  virtual bool references_global_var() const = 0;
-
   virtual Type GetType() const = 0;
 
   location loc;
@@ -187,8 +196,6 @@ struct literal_expr : public expr
   using expr::expr;
 
   virtual ~literal_expr() = default;
-
-  bool references_global_var() const override { return false; }
 };
 
 struct int_literal final : public literal_expr
@@ -207,10 +214,7 @@ struct int_literal final : public literal_expr
 
   void accept(expr_visitor& v) const override { v.visit(*this); }
 
-  Type GetType() const override
-  {
-    return Type(TypeID::Int, Variability::Uniform);
-  }
+  Type GetType() const override { return Type(TypeID::Int); }
 };
 
 struct bool_literal final : public literal_expr
@@ -224,10 +228,7 @@ struct bool_literal final : public literal_expr
     mutator.Mutate(*this);
   }
 
-  Type GetType() const override
-  {
-    return Type(TypeID::Bool, Variability::Uniform);
-  }
+  Type GetType() const override { return Type(TypeID::Bool); }
 };
 
 struct float_literal final : public literal_expr
@@ -246,10 +247,7 @@ struct float_literal final : public literal_expr
 
   void accept(expr_visitor& v) const override { v.visit(*this); }
 
-  Type GetType() const override
-  {
-    return Type(TypeID::Float, Variability::Uniform);
-  }
+  Type GetType() const override { return Type(TypeID::Float); }
 };
 
 struct Var;
@@ -272,13 +270,19 @@ struct var_ref final : public expr
     mutator.Mutate(*this);
   }
 
+  bool HasResolvedVar() const noexcept { return !!resolved_var; }
+
+  const Var& ResolvedVar() const
+  {
+    assert(resolved_var);
+    return *resolved_var;
+  }
+
   const std::string& Identifier() const noexcept { return *name.identifier; }
 
   void Resolve(const Var* v) { resolved_var = v; }
 
   Type GetType() const override;
-
-  bool references_global_var() const override;
 };
 
 struct group_expr final : public expr
@@ -302,10 +306,7 @@ struct group_expr final : public expr
     mInnerExpr->AcceptMutator(mutator);
   }
 
-  bool references_global_var() const override
-  {
-    return mInnerExpr->references_global_var();
-  }
+  void Recurse(expr_visitor& visitor) const { mInnerExpr->accept(visitor); }
 
   std::unique_ptr<expr> mInnerExpr;
 };
@@ -337,12 +338,9 @@ struct unary_expr final : public expr
     mBaseExpr->AcceptMutator(mutator);
   }
 
-  Type GetType() const override { return mBaseExpr->GetType(); }
+  void Recurse(expr_visitor& visitor) const { mBaseExpr->accept(visitor); }
 
-  bool references_global_var() const override
-  {
-    return this->mBaseExpr->references_global_var();
-  }
+  Type GetType() const override { return mBaseExpr->GetType(); }
 
   std::unique_ptr<expr> mBaseExpr;
 
@@ -387,22 +385,14 @@ struct binary_expr final : public expr
     right->AcceptMutator(mutator);
   }
 
-  Type GetType() const override
+  void Recurse(expr_visitor& visitor) const
   {
-    return common_type(left->GetType(), right->GetType());
+    left->accept(visitor);
+
+    right->accept(visitor);
   }
 
-  static Type common_type(Type l, Type r) noexcept
-  {
-    // TODO
-    (void)r;
-    return l;
-  }
-
-  bool references_global_var() const override
-  {
-    return left->references_global_var() || right->references_global_var();
-  }
+  Type GetType() const override;
 };
 
 struct type_constructor final : public expr
@@ -432,14 +422,10 @@ struct type_constructor final : public expr
       argExpr->AcceptMutator(mutator);
   }
 
-  bool references_global_var() const override
+  void Recurse(expr_visitor& visitor) const
   {
-    for (const auto& a : *this->args) {
-      if (a->references_global_var())
-        return true;
-    }
-
-    return false;
+    for (const auto& argExpr : *args)
+      argExpr->accept(visitor);
   }
 };
 
@@ -471,15 +457,12 @@ struct member_expr final : public expr
     mutator.Mutate(*this);
   }
 
-  bool references_global_var() const override
-  {
-    return base_expr->references_global_var();
-  }
-
   void Recurse(const ExprMutator& mutator)
   {
     base_expr->AcceptMutator(mutator);
   }
+
+  void Recurse(expr_visitor& visitor) const { base_expr->accept(visitor); }
 
   Type GetType() const override;
 };
@@ -599,30 +582,56 @@ struct return_stmt final : public stmt
 
 using param_list = std::vector<std::unique_ptr<Var>>;
 
-struct func final
+class Func final
 {
-  std::unique_ptr<Type> mReturnType;
-
-  decl_name name;
-
-  std::unique_ptr<param_list> params;
-
-  std::unique_ptr<stmt> body;
-
-  func(Type* returnType, decl_name&& n, param_list* p, stmt* b)
+public:
+  Func(Type* returnType, decl_name&& name, param_list* params, stmt* body)
     : mReturnType(returnType)
-    , name(std::move(n))
-    , params(p)
-    , body(b)
+    , mName(std::move(name))
+    , mParamList(params)
+    , mBody(body)
   {}
 
-  bool requires_program_state() const;
+  location GetNameLocation() const noexcept { return mName.loc; }
+
+  const Type& ReturnType() const noexcept { return *mReturnType; }
+
+  const param_list& ParamList() const noexcept { return *mParamList; }
+
+  const stmt& Body() const noexcept { return *mBody; }
+
+  const std::string& Identifier() const noexcept { return *mName.identifier; }
+
+  void AcceptBodyMutator(StmtMutator& mutator)
+  {
+    mBody->AcceptMutator(mutator);
+  }
+
+  void AcceptBodyAccessor(stmt_visitor& visitor) const
+  {
+    mBody->accept(visitor);
+  }
+
+  bool ReferencesGlobalState() const;
+
+  bool ReferencesFrameState() const;
+
+  bool ReferencesPixelState() const;
 
   bool IsEntryPoint() const;
 
   bool IsPixelSampler() const;
 
   bool IsPixelEncoder() const;
+
+private:
+  std::unique_ptr<Type> mReturnType;
+
+  decl_name mName;
+
+  std::unique_ptr<param_list> mParamList;
+
+  std::unique_ptr<stmt> mBody;
 };
 
 struct Var final
@@ -668,7 +677,7 @@ private:
 class Program final
 {
 public:
-  void AppendFunc(func* f) { mFuncs.emplace_back(f); }
+  void AppendFunc(Func* f) { mFuncs.emplace_back(f); }
 
   void AppendGlobalVar(Var* globalVar);
 
@@ -681,7 +690,7 @@ public:
   const auto& VaryingGlobalVars() const noexcept { return mVaryingGlobalVars; }
 
 private:
-  std::vector<std::unique_ptr<func>> mFuncs;
+  std::vector<std::unique_ptr<Func>> mFuncs;
 
   std::vector<std::unique_ptr<Var>> mGlobalVars;
 
@@ -698,7 +707,7 @@ union semantic_value
 
   param_list* as_param_list;
 
-  func* as_func;
+  Func* as_func;
 
   stmt_list* as_stmt_list;
 
