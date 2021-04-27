@@ -6,37 +6,37 @@
 
 class Program;
 
-class generator
+class Generator
 {
 public:
-  generator(std::ostream& os_)
+  Generator(std::ostream& os_)
     : os(os_)
   {}
 
-  virtual ~generator() = default;
+  virtual ~Generator() = default;
 
-  virtual void generate(const Program&) = 0;
+  virtual void Generate(const Program&) = 0;
 
 protected:
   std::ostream& os;
 
-  std::ostream& indent()
+  std::ostream& Indent()
   {
-    for (size_t i = 0; i < this->indent_level; i++)
+    for (size_t i = 0; i < mIndentLevel; i++)
       this->os << "  ";
 
     return this->os;
   }
 
-  void increase_indent() { this->indent_level++; }
+  void IncreaseIndent() { mIndentLevel++; }
 
-  void decrease_indent()
+  void DecreaseIndent()
   {
-    assert(this->indent_level > 0);
+    assert(mIndentLevel > 0);
 
-    this->indent_level--;
+    mIndentLevel--;
   }
 
 private:
-  size_t indent_level = 0;
+  size_t mIndentLevel = 0;
 };

@@ -7,7 +7,7 @@ namespace {
 class Scope final
 {
 public:
-  void Define(const Var* v) { mVarMap.emplace(*v->name.identifier, v); }
+  void Define(const Var* v) { mVarMap.emplace(v->name.Identifier(), v); }
 
   auto FindVar(const std::string& name) const -> const Var*
   {
@@ -43,6 +43,18 @@ public:
     mLocalScopes.back().Define(v);
   }
 
+  auto FindFuncs(const std::string& name) const -> std::vector<const Func*>
+  {
+    std::vector<const Func*> matches;
+
+    for (const auto& func : mProgram.Funcs()) {
+      if (func->HasName(name))
+        matches.emplace_back(func.get());
+    }
+
+    return matches;
+  }
+
   const Var* FindVar(const std::string& name) const
   {
     for (auto it = mLocalScopes.rbegin(); it != mLocalScopes.rend(); it++) {
@@ -74,13 +86,18 @@ public:
     : mSymbolTable(symbolTable)
   {}
 
-  void Mutate(bool_literal&) const override {}
-  void Mutate(int_literal&) const override {}
-  void Mutate(float_literal&) const override {}
+  void Mutate(BoolLiteral&) const override {}
+  void Mutate(IntLiteral&) const override {}
+  void Mutate(FloatLiteral&) const override {}
 
-  void Mutate(binary_expr& binaryExpr) const override
+  void Mutate(BinaryExpr& binaryExpr) const override
   {
     binaryExpr.Recurse(*this);
+  }
+
+  void Mutate(FuncCall& funcCall) const override
+  {
+    funcCall.QueueNameMatches(mSymbolTable.FindFuncs(funcCall.Identifier()));
   }
 
   void Mutate(unary_expr& unaryExpr) const override
@@ -88,12 +105,9 @@ public:
     unaryExpr.Recurse(*this);
   }
 
-  void Mutate(group_expr& groupExpr) const override
-  {
-    groupExpr.Recurse(*this);
-  }
+  void Mutate(GroupExpr& groupExpr) const override { groupExpr.Recurse(*this); }
 
-  void Mutate(var_ref& varRef) const override
+  void Mutate(VarRef& varRef) const override
   {
     const auto* var = mSymbolTable.FindVar(varRef.Identifier());
 
@@ -108,7 +122,7 @@ public:
     typeConstructor.Recurse(*this);
   }
 
-  void Mutate(member_expr& memberExpr) const override
+  void Mutate(MemberExpr& memberExpr) const override
   {
     memberExpr.Recurse(*this);
   }

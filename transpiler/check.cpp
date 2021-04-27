@@ -24,7 +24,7 @@ struct check_context final
 
   size_t get_error_count() const noexcept { return this->error_count; }
 
-  std::ostream& emit_error(const location& l)
+  std::ostream& emit_error(const Location& l)
   {
     this->error_count++;
 
@@ -76,7 +76,7 @@ public:
     const auto& ret_value = *s.return_value;
 
     if (ret_value.GetType() != mExpectedReturnType) {
-      this->ctx.emit_error(ret_value.loc)
+      this->ctx.emit_error(ret_value.GetLocation())
         << "expression should return type '" << mExpectedReturnType << "' not '"
         << ret_value.GetType() << "'" << std::endl;
     }

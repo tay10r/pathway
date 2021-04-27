@@ -4,12 +4,20 @@ uniform vec3 gBgColor1 = vec3(1.0, 1.0, 1.0);
 
 uniform vec3 gBgColor2 = vec3(0.5, 0.7, 1.0);
 
+varying vec3
+OnMiss(vec3 rayDir)
+{
+  float t = (rayDir.y + 1.0) * 0.5;
+
+  return (1.0 - t) * gBgColor1 + t * gBgColor2;
+}
+
 void
 SamplePixel(vec2 uv)
 {
-  float t = uv.y;
+  vec3 rayDir = vec3(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, -1.0);
 
-  gPixelColor = (1.0 - t) * gBgColor1 + t * gBgColor2;
+  gPixelColor = OnMiss(rayDir);
 }
 
 vec4

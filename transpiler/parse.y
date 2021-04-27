@@ -1,13 +1,41 @@
 %{
-#include "common.h"
-#include "lex.h"
-#include "parse.h"
+#include "lexer.h"
+#include "program_consumer.h"
+#include "syntax_error_observer.h"
+
+#include "generated/lex.h"
+#include "generated/parse.h"
 
 namespace {
 
-void yyerror(const location* loc, ParseObserver& observer, const char* msg)
+void yyerror(const Location* location,
+             Lexer&,
+             ProgramConsumer&,
+             SyntaxErrorObserver& syntaxErrorObserver,
+             const char* errorMessage)
 {
-  observer.OnSyntaxError(*loc, msg);
+  syntaxErrorObserver.ObserveSyntaxError(*location, errorMessage);
+}
+
+int yylex(semantic_value* value, Location* location, Lexer& lexer)
+{
+  auto token = lexer.Lex();
+
+  if (!token) {
+    return END;
+  }
+
+  if (token->Kind() == IDENTIFIER) {
+    value->as_string = new std::string(token->AsStringView());
+  } else if (token->Kind() == INT_LITERAL) {
+    value->as_int = token->AsInt();
+  } else if (token->Kind() == FLOAT_LITERAL) {
+    value->as_float = token->AsDouble();
+  }
+
+  *location = token->GetLocation();
+
+  return token->Kind();
 }
 
 } // namespace
@@ -15,18 +43,29 @@ void yyerror(const location* loc, ParseObserver& observer, const char* msg)
 %}
 
 %code requires {
+
 #include "common.h"
+
+class Lexer;
+class ProgramConsumer;
+class SyntaxErrorObserver;
 }
 
 %locations
 
-%define api.location.type {location}
+%define api.location.type {Location}
 
 %define api.value.type {semantic_value}
 
 %define api.pure full
 
-%parse-param {ParseObserver& observer}
+%lex-param {Lexer& lexer}
+
+%parse-param {Lexer& lexer}
+
+%parse-param {ProgramConsumer& programConsumer}
+
+%parse-param {SyntaxErrorObserver& syntaxErrorObserver}
 
 %define parse.error verbose
 
@@ -39,16 +78,39 @@ void yyerror(const location* loc, ParseObserver& observer, const char* msg)
 
 %token<as_float> FLOAT_LITERAL "float literal"
 
+%token<asBool> BOOL_LITERAL "bool literal"
+
 %token<as_string> IDENTIFIER "identifier"
 
 %token RETURN "return"
+%token BREAK "break"
+%token CONTINUE "continue"
+%token IF "if"
+%token ELSE "else"
+%token FOR "for"
+%token WHILE "while"
 
 %token INVALID_CHAR "invalid character"
 
-%token<asTypeID> TYPE_NAME "type name"
+%token VOID "void"
+%token BOOL "bool"
+%token INT "int"
+%token FLOAT "float"
+%token VEC2 "vec2"
+%token VEC3 "vec3"
+%token VEC4 "vec4"
+%token VEC2I "vec2i"
+%token VEC3I "vec3i"
+%token VEC4I "vec4i"
+%token MAT2 "mat2"
+%token MAT3 "mat3"
+%token MAT4 "mat4"
 
-%token<asVariability> VARIABILITY "variability"
+%token UNIFORM "uniform"
+%token VARYING "varying"
 
+%type <asTypeID> type_name "type name"
+%type <asVariability> variability "variability"
 %type <asType> type "type"
 
 %type <as_expr> primary_expr
@@ -67,11 +129,8 @@ void yyerror(const location* loc, ParseObserver& observer, const char* msg)
 %type <as_stmt_list> stmt_list
 
 %type <as_stmt> stmt
-
 %type <as_stmt> assignment_stmt
-
 %type <as_stmt> return_stmt
-
 %type <as_stmt> compound_stmt
 
 %type <as_stmt> decl_stmt
@@ -83,6 +142,8 @@ void yyerror(const location* loc, ParseObserver& observer, const char* msg)
 %type <asProgram> program
 
 %destructor { delete $$; } IDENTIFIER
+
+%destructor { delete $$; } type
 
 %destructor { delete $$; } expr
 
@@ -104,7 +165,7 @@ void yyerror(const location* loc, ParseObserver& observer, const char* msg)
 
 file: program END
     {
-      observer.OnProgram(std::unique_ptr<Program>($1));
+      programConsumer.ConsumeProgram(std::unique_ptr<Program>($1));
     }
     ;
 
@@ -130,11 +191,30 @@ program: func
        }
        ;
 
-type: TYPE_NAME
+type_name: VOID  { $$ = TypeID::Void; }
+         | BOOL  { $$ = TypeID::Bool; }
+         | INT   { $$ = TypeID::Int; }
+         | FLOAT { $$ = TypeID::Float; }
+         | VEC2  { $$ = TypeID::Vec2; }
+         | VEC3  { $$ = TypeID::Vec3; }
+         | VEC4  { $$ = TypeID::Vec4; }
+         | VEC2I { $$ = TypeID::Vec2i; }
+         | VEC3I { $$ = TypeID::Vec3i; }
+         | VEC4I { $$ = TypeID::Vec4i; }
+         | MAT2  { $$ = TypeID::Mat2; }
+         | MAT3  { $$ = TypeID::Mat3; }
+         | MAT4  { $$ = TypeID::Mat4; }
+         ;
+
+variability: UNIFORM { $$ = Variability::Uniform; }
+           | VARYING { $$ = Variability::Varying; }
+           ;
+
+type: type_name
     {
       $$ = new Type($1);
     }
-    | VARIABILITY TYPE_NAME
+    | variability type_name
     {
       $$ = new Type($2, $1);
     }
@@ -142,17 +222,17 @@ type: TYPE_NAME
 
 var_decl: type IDENTIFIER ';'
         {
-          $$ = new Var($1, decl_name($2, @2), nullptr);
+          $$ = new Var($1, DeclName($2, @2), nullptr);
         }
         | type IDENTIFIER '=' expr ';'
         {
-          $$ = new Var($1, decl_name($2, @2), $4);
+          $$ = new Var($1, DeclName($2, @2), $4);
         }
         ;
 
 param_decl: type IDENTIFIER
           {
-            $$ = new Var($1, decl_name($2, @2), nullptr);
+            $$ = new Var($1, DeclName($2, @2), nullptr);
           }
           ;
 
@@ -170,11 +250,11 @@ param_list: param_decl
 
 func: type IDENTIFIER '(' param_list ')' compound_stmt
     {
-      $$ = new Func($1, decl_name($2, @2), $4, $6);
+      $$ = new Func($1, DeclName($2, @2), $4, $6);
     }
     | type IDENTIFIER '(' ')' compound_stmt
     {
-      $$ = new Func($1, decl_name($2, @2), new param_list(), $5);
+      $$ = new Func($1, DeclName($2, @2), new param_list(), $5);
     }
     ;
 
@@ -221,7 +301,7 @@ compound_stmt: '{' stmt_list '}'
 
 expr_list: expr
          {
-           $$ = new expr_list();
+           $$ = new ExprList();
 
            $$->emplace_back($1);
          }
@@ -235,30 +315,38 @@ expr_list: expr
 
 primary_expr: INT_LITERAL
             {
-              $$ = new int_literal($1, @1);
+              $$ = new IntLiteral($1, @1);
             }
             | FLOAT_LITERAL
             {
-              $$ = new float_literal($1, @1);
+              $$ = new FloatLiteral($1, @1);
+            }
+            | BOOL_LITERAL
+            {
+              $$ = new BoolLiteral($1, @1);
             }
             | '(' expr ')'
             {
-              $$ = new group_expr($2);
+              $$ = new GroupExpr($2, @$);
             }
-            | TYPE_NAME '(' expr_list ')'
+            | type_name '(' expr_list ')'
             {
               $$ = new type_constructor($1, $3, @$);
             }
             | IDENTIFIER
             {
-              $$ = new var_ref(decl_name($1, @1));
+              $$ = new VarRef(DeclName($1, @1));
+            }
+            | IDENTIFIER '(' expr_list ')'
+            {
+              $$ = new FuncCall(DeclName($1, @1), $3, @$);
             }
             ;
 
 postfix_expr: primary_expr
             | postfix_expr '.' IDENTIFIER
             {
-              $$ = new member_expr($1, decl_name($3, @3), @$);
+              $$ = new MemberExpr($1, DeclName($3, @3), @$);
             }
 
 unary_expr: postfix_expr
@@ -279,26 +367,26 @@ unary_expr: postfix_expr
 multiplicative_expr: unary_expr
                    | multiplicative_expr '*' unary_expr
                    {
-                     $$ = new binary_expr($1, $3, binary_expr::kind::MUL, @$);
+                     $$ = new BinaryExpr($1, $3, BinaryExpr::Kind::Mul, @$);
                    }
                    | multiplicative_expr '/' unary_expr
                    {
-                     $$ = new binary_expr($1, $3, binary_expr::kind::DIV, @$);
+                     $$ = new BinaryExpr($1, $3, BinaryExpr::Kind::Div, @$);
                    }
                    | multiplicative_expr '%' unary_expr
                    {
-                     $$ = new binary_expr($1, $3, binary_expr::kind::MOD, @$);
+                     $$ = new BinaryExpr($1, $3, BinaryExpr::Kind::Mod, @$);
                    }
                    ;
 
 additive_expr: multiplicative_expr
              | additive_expr '+' multiplicative_expr
              {
-               $$ = new binary_expr($1, $3, binary_expr::kind::ADD, @$);
+               $$ = new BinaryExpr($1, $3, BinaryExpr::Kind::Add, @$);
              }
              | additive_expr '-' multiplicative_expr
              {
-               $$ = new binary_expr($1, $3, binary_expr::kind::SUB, @$);
+               $$ = new BinaryExpr($1, $3, BinaryExpr::Kind::Sub, @$);
              }
              ;
 

@@ -5,24 +5,24 @@
 
 #include <sstream>
 
-class c_based_generator : public generator
+class CBasedGenerator : public Generator
 {
 public:
-  c_based_generator(std::ostream& os_)
-    : generator(os_)
+  CBasedGenerator(std::ostream& os_)
+    : Generator(os_)
   {}
 
-  virtual ~c_based_generator() = default;
+  virtual ~CBasedGenerator() = default;
 
 protected:
-  std::string to_string(Type type) const
+  std::string ToString(Type type) const
   {
     std::ostringstream os;
     os << type.ID();
     return os.str();
   }
 
-  std::ostream& blank() { return this->os << std::endl; }
+  std::ostream& Blank() { return this->os << std::endl; }
 
-  std::ostream& comment() { return this->os << "// "; }
+  std::ostream& Comment() { return this->os << "// "; }
 };

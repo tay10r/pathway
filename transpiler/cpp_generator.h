@@ -2,55 +2,55 @@
 
 #include "c_based_generator.h"
 
-class cpp_generator final
-  : public c_based_generator
+class CPPGenerator final
+  : public CBasedGenerator
   , public stmt_visitor
-  , public expr_visitor
+  , public ExprVisitor
 {
 public:
-  cpp_generator(std::ostream& os)
-    : c_based_generator(os)
+  CPPGenerator(std::ostream& os)
+    : CBasedGenerator(os)
   {}
 
-  void generate(const Program& program) override;
+  void Generate(const Program& program) override;
 
 private:
   void visit(const AssignmentStmt& assignmentStmt) override
   {
-    this->indent();
+    Indent();
 
-    assignmentStmt.LValue().accept(*this);
+    assignmentStmt.LValue().AcceptVisitor(*this);
 
     this->os << " = ";
 
-    assignmentStmt.RValue().accept(*this);
+    assignmentStmt.RValue().AcceptVisitor(*this);
 
     this->os << ";" << std::endl;
   }
 
   void visit(const compound_stmt& s) override
   {
-    this->indent() << '{' << std::endl;
+    Indent() << '{' << std::endl;
 
-    this->increase_indent();
+    IncreaseIndent();
 
     for (const auto& inner_stmt : *s.stmts)
       inner_stmt->accept(*this);
 
-    this->decrease_indent();
+    DecreaseIndent();
 
-    this->indent() << '}' << std::endl;
+    Indent() << '}' << std::endl;
   }
 
   void visit(const decl_stmt& s) override
   {
-    this->indent() << to_string(*s.v->mType) << ' ' << *s.v->name.identifier;
+    Indent() << ToString(*s.v->mType) << ' ' << s.v->name.Identifier();
 
     if (s.v->init_expr) {
 
       this->os << " = ";
 
-      s.v->init_expr->accept(*this);
+      s.v->init_expr->AcceptVisitor(*this);
     }
 
     this->os << ';' << std::endl;
@@ -58,26 +58,32 @@ private:
 
   void visit(const return_stmt& s) override
   {
-    this->indent() << "return ";
+    Indent() << "return ";
 
-    s.return_value->accept(*this);
+    s.return_value->AcceptVisitor(*this);
 
     this->os << ';' << std::endl;
   }
 
-  void visit(const int_literal& e) override { this->os << e.value; }
-
-  void visit(const float_literal& e) override { this->os << e.value; }
-
-  void visit(const bool_literal& e) override { this->os << e.value; }
-
-  void visit(const type_constructor& type_ctor) override
+  void Visit(const IntLiteral& intLiteral) override
   {
-    this->os << to_string(type_ctor.mType) << '{';
+    this->os << intLiteral.Value();
+  }
+
+  void Visit(const FloatLiteral& e) override
+  {
+    this->os << std::scientific << e.Value() << "f";
+  }
+
+  void Visit(const BoolLiteral& e) override { this->os << e.Value(); }
+
+  void Visit(const type_constructor& type_ctor) override
+  {
+    this->os << ToString(type_ctor.mType) << '{';
 
     for (size_t i = 0; i < type_ctor.args->size(); i++) {
 
-      type_ctor.args->at(i)->accept(*this);
+      type_ctor.args->at(i)->AcceptVisitor(*this);
 
       if ((i + 1) < type_ctor.args->size())
         this->os << ", ";
@@ -86,28 +92,26 @@ private:
     this->os << '}';
   }
 
-  void visit(const var_ref& v) override
+  void Visit(const VarRef& v) override
   {
-    assert(v.resolved_var != nullptr);
+    assert(v.HasResolvedVar());
 
-    if (v.resolved_var->IsUniformGlobal())
+    if (v.ResolvedVar().IsUniformGlobal())
       this->os << "frame.";
-    else if (v.resolved_var->IsVaryingGlobal())
+    else if (v.ResolvedVar().IsVaryingGlobal())
       this->os << "pixel.";
 
-    this->os << *v.name.identifier;
+    this->os << v.Identifier();
   }
 
-  void visit(const group_expr& e) override
+  void Visit(const GroupExpr& e) override
   {
     os << '(';
-
-    e.mInnerExpr->accept(*this);
-
+    e.Recurse(*this);
     os << ')';
   }
 
-  void visit(const unary_expr& e) override
+  void Visit(const unary_expr& e) override
   {
     switch (e.k) {
       case unary_expr::kind::LOGICAL_NOT:
@@ -122,15 +126,32 @@ private:
     }
   }
 
-  void visit(const binary_expr& e) override { GenerateBinaryExpr(e); }
+  void Visit(const BinaryExpr& e) override { GenerateBinaryExpr(e); }
 
-  void visit(const member_expr& e) override;
+  void Visit(const FuncCall& funcCall) override
+  {
+    os << funcCall.Identifier() << "(";
 
-  void GenerateBinaryExpr(const binary_expr&);
+    const auto& args = funcCall.Args();
 
-  void GenerateIntVectorSwizzle(const member_expr& e);
+    for (size_t i = 0; i < args.size(); i++) {
 
-  void GenerateFloatVectorSwizzle(const member_expr& e);
+      args[i]->AcceptVisitor(*this);
+
+      if ((i + 1) < args.size())
+        os << ", ";
+    }
+
+    os << ")";
+  }
+
+  void Visit(const MemberExpr& e) override;
+
+  void GenerateBinaryExpr(const BinaryExpr&);
+
+  void GenerateIntVectorSwizzle(const MemberExpr& e, size_t sourceVecSize);
+
+  void GenerateFloatVectorSwizzle(const MemberExpr& e, size_t sourceVecSize);
 
   void generate_pixel_state(const Program& program);
 
@@ -146,7 +167,7 @@ private:
 
     this->generate(fn, fn.ParamList());
 
-    this->os << " noexcept -> " << this->to_string(fn.ReturnType());
+    this->os << " noexcept -> " << ToString(fn.ReturnType());
 
     return this->os;
   }
@@ -157,7 +178,7 @@ private:
 
       this->generate_header(*fn) << ';' << std::endl;
 
-      this->blank();
+      this->Blank();
     }
   }
 
@@ -169,7 +190,7 @@ private:
 
       fn->AcceptBodyAccessor(*this);
 
-      this->blank();
+      this->Blank();
     }
   }
 };

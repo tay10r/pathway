@@ -194,161 +194,302 @@ struct Swizzle1 final
   }
 };
 
-template <typename Scalar>
-constexpr Scalar
-Add(Scalar a, Scalar b) noexcept
-{
-  return a + b;
-}
+//====================//
+// BINARY OPERATOR: + //
+//====================//
 
 template <typename Scalar>
 constexpr generic_vec2<Scalar>
-Add(Scalar a, generic_vec2<Scalar> b) noexcept
+operator+(Scalar a, generic_vec2<Scalar> b) noexcept
 {
   return generic_vec2<Scalar>(a.x + b.x, a.y + b.y);
 }
 
 template <typename Scalar>
 constexpr generic_vec2<Scalar>
-Add(generic_vec2<Scalar> a, Scalar b) noexcept
+operator+(generic_vec2<Scalar> a, Scalar b) noexcept
 {
-  return Add(b, a);
+  return b + a;
 }
 
 template <typename Scalar>
 constexpr generic_vec2<Scalar>
-Add(generic_vec2<Scalar> a, generic_vec2<Scalar> b) noexcept
+operator+(generic_vec2<Scalar> a, generic_vec2<Scalar> b) noexcept
 {
   return { a.x + b.x, a.y + b.y };
 }
 
 template <typename Scalar>
 constexpr generic_vec3<Scalar>
-Add(generic_vec3<Scalar> a, Scalar b) noexcept
+operator+(generic_vec3<Scalar> a, Scalar b) noexcept
 {
   return { a.x + b, a.y + b, a.z + b };
 }
 
 template <typename Scalar>
 constexpr generic_vec3<Scalar>
-Add(Scalar a, generic_vec3<Scalar> b) noexcept
+operator+(Scalar a, generic_vec3<Scalar> b) noexcept
 {
-  return Add(b, a);
+  return operator+(b, a);
 }
 
 template <typename Scalar>
 constexpr generic_vec3<Scalar>
-Add(generic_vec3<Scalar> a, generic_vec3<Scalar> b) noexcept
+operator+(generic_vec3<Scalar> a, generic_vec3<Scalar> b) noexcept
 {
   return { a.x + b.x, a.y + b.y, a.z + b.z };
 }
 
 template <typename Scalar>
 constexpr generic_vec4<Scalar>
-Add(generic_vec4<Scalar> a, Scalar b) noexcept
+operator+(generic_vec4<Scalar> a, Scalar b) noexcept
 {
   return { a.x + b, a.y + b, a.z + b, a.w + b };
 }
 
 template <typename Scalar>
 constexpr generic_vec4<Scalar>
-Add(Scalar a, generic_vec4<Scalar> b) noexcept
+operator+(Scalar a, generic_vec4<Scalar> b) noexcept
 {
-  return Add(b, a);
+  return operator+(b, a);
 }
 
 template <typename Scalar>
 constexpr generic_vec4<Scalar>
-Add(generic_vec4<Scalar> a, generic_vec4<Scalar> b) noexcept
+operator+(generic_vec4<Scalar> a, generic_vec4<Scalar> b) noexcept
 {
   return { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w };
+}
+
+//====================//
+// BINARY OPERATOR: - //
+//====================//
+
+template <typename Scalar>
+constexpr generic_vec2<Scalar>
+operator-(Scalar a, generic_vec2<Scalar> b) noexcept
+{
+  return generic_vec2<Scalar>(a.x - b.x, a.y - b.y);
+}
+
+template <typename Scalar>
+constexpr generic_vec2<Scalar>
+operator-(generic_vec2<Scalar> a, Scalar b) noexcept
+{
+  return b - a;
+}
+
+template <typename Scalar>
+constexpr generic_vec2<Scalar>
+operator-(generic_vec2<Scalar> a, generic_vec2<Scalar> b) noexcept
+{
+  return { a.x - b.x, a.y - b.y };
+}
+
+template <typename Scalar>
+constexpr generic_vec3<Scalar>
+operator-(generic_vec3<Scalar> a, Scalar b) noexcept
+{
+  return { a.x - b, a.y - b, a.z - b };
+}
+
+template <typename Scalar>
+constexpr generic_vec3<Scalar>
+operator-(Scalar a, generic_vec3<Scalar> b) noexcept
+{
+  return b - a;
+}
+
+template <typename Scalar>
+constexpr generic_vec3<Scalar>
+operator-(generic_vec3<Scalar> a, generic_vec3<Scalar> b) noexcept
+{
+  return { a.x - b.x, a.y - b.y, a.z - b.z };
+}
+
+template <typename Scalar>
+constexpr generic_vec4<Scalar>
+operator-(generic_vec4<Scalar> a, Scalar b) noexcept
+{
+  return { a.x - b, a.y - b, a.z - b, a.w - b };
+}
+
+template <typename Scalar>
+constexpr generic_vec4<Scalar>
+operator-(Scalar a, generic_vec4<Scalar> b) noexcept
+{
+  return operator-(b, a);
+}
+
+template <typename Scalar>
+constexpr generic_vec4<Scalar>
+operator-(generic_vec4<Scalar> a, generic_vec4<Scalar> b) noexcept
+{
+  return { a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w };
+}
+
+//====================//
+// BINARY OPERATOR: * //
+//====================//
+
+template <typename Scalar>
+constexpr generic_vec2<Scalar>
+operator*(Scalar a, generic_vec2<Scalar> b) noexcept
+{
+  return generic_vec2<Scalar>(a.x * b.x, a.y * b.y);
+}
+
+template <typename Scalar>
+constexpr generic_vec2<Scalar>
+operator*(generic_vec2<Scalar> a, Scalar b) noexcept
+{
+  return b * a;
+}
+
+template <typename Scalar>
+constexpr generic_vec2<Scalar>
+operator*(generic_vec2<Scalar> a, generic_vec2<Scalar> b) noexcept
+{
+  return { a.x * b.x, a.y * b.y };
+}
+
+template <typename Scalar>
+constexpr generic_vec3<Scalar>
+operator*(generic_vec3<Scalar> a, Scalar b) noexcept
+{
+  return { a.x * b, a.y * b, a.z * b };
+}
+
+template <typename Scalar>
+constexpr generic_vec3<Scalar>
+operator*(Scalar a, generic_vec3<Scalar> b) noexcept
+{
+  return b * a;
+}
+
+template <typename Scalar>
+constexpr generic_vec3<Scalar>
+operator*(generic_vec3<Scalar> a, generic_vec3<Scalar> b) noexcept
+{
+  return { a.x * b.x, a.y * b.y, a.z * b.z };
+}
+
+template <typename Scalar>
+constexpr generic_vec4<Scalar>
+operator*(generic_vec4<Scalar> a, Scalar b) noexcept
+{
+  return { a.x * b, a.y * b, a.z * b, a.w * b };
+}
+
+template <typename Scalar>
+constexpr generic_vec4<Scalar>
+operator*(Scalar a, generic_vec4<Scalar> b) noexcept
+{
+  return operator*(b, a);
+}
+
+template <typename Scalar>
+constexpr generic_vec4<Scalar>
+operator*(generic_vec4<Scalar> a, generic_vec4<Scalar> b) noexcept
+{
+  return { a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w };
 }
 )";
 
 } // namespace
 
 void
-cpp_generator::GenerateIntVectorSwizzle(const member_expr& e)
+CPPGenerator::GenerateIntVectorSwizzle(const MemberExpr& e, size_t vecSize)
 {
-  swizzle s(*e.member_name.identifier);
+  auto swizzleResult = Swizzle::Make(e.MemberName().Identifier(), vecSize);
 
-  switch (s.member_indices.size()) {
+  if (!swizzleResult)
+    return;
+
+  const auto& swizzle = swizzleResult.value();
+
+  switch (swizzle.Size()) {
     case 1:
-      this->os << "Swizzle1<int, ";
-      this->os << s.member_indices[0];
-      this->os << ">::get(";
-      e.base_expr->accept(*this);
-      this->os << ")";
+      os << "Swizzle1<int, ";
+      os << swizzle.At(0);
+      os << ">::get(";
+      e.BaseExpr().AcceptVisitor(*this);
+      os << ")";
       break;
     case 2:
-      this->os << "Swizzle2<vec2i, ";
-      this->os << s.member_indices[0] << ", " << s.member_indices[1];
-      this->os << ">::get(";
-      e.base_expr->accept(*this);
-      this->os << ")";
+      os << "Swizzle2<vec2i, ";
+      os << swizzle.At(0) << ", " << swizzle.At(1);
+      os << ">::get(";
+      e.BaseExpr().AcceptVisitor(*this);
+      os << ")";
       break;
     case 3:
-      this->os << "Swizzle3<vec3i, ";
-      this->os << s.member_indices[0] << ", " << s.member_indices[1];
-      this->os << ", " << s.member_indices[2];
-      this->os << ">::get(";
-      e.base_expr->accept(*this);
-      this->os << ")";
+      os << "Swizzle3<vec3i, ";
+      os << swizzle.At(0) << ", " << swizzle.At(1);
+      os << ", " << swizzle.At(2);
+      os << ">::get(";
+      e.BaseExpr().AcceptVisitor(*this);
+      os << ")";
       break;
     case 4:
-      this->os << "Swizzle4<vec4i, ";
-      this->os << s.member_indices[0] << ", " << s.member_indices[1];
-      this->os << ", " << s.member_indices[2] << ", " << s.member_indices[3];
-      this->os << ">::get(";
-      e.base_expr->accept(*this);
-      this->os << ")";
+      os << "Swizzle4<vec4i, ";
+      os << swizzle.At(0) << ", " << swizzle.At(1);
+      os << ", " << swizzle.At(2) << ", " << swizzle.At(3);
+      os << ">::get(";
+      e.BaseExpr().AcceptVisitor(*this);
+      os << ")";
       break;
   }
 }
 
 void
-cpp_generator::GenerateFloatVectorSwizzle(const member_expr& e)
+CPPGenerator::GenerateFloatVectorSwizzle(const MemberExpr& e, size_t vecSize)
 {
-  swizzle s(*e.member_name.identifier);
+  auto swizzleResult = Swizzle::Make(e.MemberName().Identifier(), vecSize);
 
-  switch (s.member_indices.size()) {
+  if (!swizzleResult)
+    return;
+
+  const auto& swizzle = swizzleResult.value();
+
+  switch (swizzle.Size()) {
     case 1:
-      this->os << "Swizzle1<float, ";
-      this->os << s.member_indices[0];
-      this->os << ">::get(";
-      e.base_expr->accept(*this);
-      this->os << ")";
+      os << "Swizzle1<float, ";
+      os << swizzle.At(0);
+      os << ">::get(";
+      e.BaseExpr().AcceptVisitor(*this);
+      os << ")";
       break;
     case 2:
-      this->os << "Swizzle2<vec2, ";
-      this->os << s.member_indices[0] << ", " << s.member_indices[1];
-      this->os << ">::get(";
-      e.base_expr->accept(*this);
-      this->os << ")";
+      os << "Swizzle2<vec2, ";
+      os << swizzle.At(0) << ", " << swizzle.At(1);
+      os << ">::get(";
+      e.BaseExpr().AcceptVisitor(*this);
+      os << ")";
       break;
     case 3:
-      this->os << "Swizzle3<vec3, ";
-      this->os << s.member_indices[0] << ", " << s.member_indices[1];
-      this->os << ", " << s.member_indices[2];
-      this->os << ">::get(";
-      e.base_expr->accept(*this);
-      this->os << ")";
+      os << "Swizzle3<vec3, ";
+      os << swizzle.At(0) << ", " << swizzle.At(1);
+      os << ", " << swizzle.At(2);
+      os << ">::get(";
+      e.BaseExpr().AcceptVisitor(*this);
+      os << ")";
       break;
     case 4:
-      this->os << "Swizzle4<vec4, ";
-      this->os << s.member_indices[0] << ", " << s.member_indices[1];
-      this->os << ", " << s.member_indices[2] << ", " << s.member_indices[3];
-      this->os << ">::get(";
-      e.base_expr->accept(*this);
-      this->os << ")";
+      os << "Swizzle4<vec4, ";
+      os << swizzle.At(0) << ", " << swizzle.At(1);
+      os << ", " << swizzle.At(2) << ", " << swizzle.At(3);
+      os << ">::get(";
+      e.BaseExpr().AcceptVisitor(*this);
+      os << ")";
       break;
   }
 }
 
 void
-cpp_generator::visit(const member_expr& e)
+CPPGenerator::Visit(const MemberExpr& e)
 {
-  switch (e.base_expr->GetType().ID()) {
+  switch (e.BaseExpr().GetType().ID()) {
     case TypeID::Void:
     case TypeID::Bool:
     case TypeID::Int:
@@ -359,115 +500,118 @@ cpp_generator::visit(const member_expr& e)
       assert(false);
       return;
     case TypeID::Vec2:
+      GenerateFloatVectorSwizzle(e, 2);
+      break;
     case TypeID::Vec3:
+      GenerateFloatVectorSwizzle(e, 3);
+      break;
     case TypeID::Vec4:
-      GenerateFloatVectorSwizzle(e);
+      GenerateFloatVectorSwizzle(e, 4);
       break;
     case TypeID::Vec2i:
+      GenerateIntVectorSwizzle(e, 2);
+      break;
     case TypeID::Vec3i:
+      GenerateIntVectorSwizzle(e, 3);
+      break;
     case TypeID::Vec4i:
-      GenerateIntVectorSwizzle(e);
+      GenerateIntVectorSwizzle(e, 4);
       break;
   }
 }
 
 void
-cpp_generator::generate_pixel_state(const Program& program)
+CPPGenerator::generate_pixel_state(const Program& program)
 {
-  this->os << "struct Pixel final" << std::endl;
+  os << "struct Pixel final" << std::endl;
 
-  this->os << "{" << std::endl;
+  os << "{" << std::endl;
 
-  this->increase_indent();
+  IncreaseIndent();
 
   for (const auto* varyingVar : program.VaryingGlobalVars()) {
 
-    this->indent() << to_string(varyingVar->GetTypeID()) << " "
-                   << varyingVar->Identifier() << ";" << std::endl;
+    Indent() << ToString(varyingVar->GetTypeID()) << " "
+             << varyingVar->Identifier() << ";" << std::endl;
   }
 
-  this->decrease_indent();
+  DecreaseIndent();
 
-  this->os << "};" << std::endl;
+  os << "};" << std::endl;
 }
 
 void
-cpp_generator::generate_frame_state(const Program& program)
+CPPGenerator::generate_frame_state(const Program& program)
 {
-  this->os << "struct Frame final" << std::endl;
+  os << "struct Frame final" << std::endl;
 
-  this->os << "{" << std::endl;
+  os << "{" << std::endl;
 
-  this->increase_indent();
+  IncreaseIndent();
 
   for (const auto* uniformVar : program.UniformGlobalVars()) {
 
-    this->indent() << to_string(uniformVar->GetTypeID()) << " "
-                   << uniformVar->Identifier();
+    Indent() << ToString(uniformVar->GetTypeID()) << " "
+             << uniformVar->Identifier();
 
     if (uniformVar->init_expr) {
 
-      this->os << " = ";
+      os << " = ";
 
-      uniformVar->init_expr->accept(*this);
+      uniformVar->init_expr->AcceptVisitor(*this);
     }
 
-    this->os << ";" << std::endl;
+    os << ";" << std::endl;
   }
 
-  this->indent() << "void EncodeRGBA(float* rgbaBuffer) const noexcept;"
-                 << std::endl;
-  this->indent() << "void EncodeRGB(unsigned char* rgbBuffer) const noexcept;"
-                 << std::endl;
+  Indent() << "void EncodeRGBA(float* rgbaBuffer) const noexcept;" << std::endl;
+  Indent() << "void EncodeRGB(unsigned char* rgbBuffer) const noexcept;"
+           << std::endl;
 
-  this->indent() << "void Sample() noexcept;" << std::endl;
-  this->indent() << "void Resize(std::size_t w, std::size_t h);" << std::endl;
+  Indent() << "void Sample() noexcept;" << std::endl;
+  Indent() << "void Resize(std::size_t w, std::size_t h);" << std::endl;
 
-  this->decrease_indent();
+  DecreaseIndent();
 
-  this->indent() << "private:" << std::endl;
+  Indent() << "private:" << std::endl;
 
-  this->increase_indent();
+  IncreaseIndent();
 
-  this->indent() << "std::vector<Pixel> mPixels;" << std::endl;
+  Indent() << "std::vector<Pixel> mPixels;" << std::endl;
 
-  this->indent() << "std::size_t mWidth = 0;" << std::endl;
+  Indent() << "std::size_t mWidth = 0;" << std::endl;
 
-  this->indent() << "std::size_t mHeight = 0;" << std::endl;
+  Indent() << "std::size_t mHeight = 0;" << std::endl;
 
-  this->decrease_indent();
+  DecreaseIndent();
 
-  this->os << "};" << std::endl;
+  os << "};" << std::endl;
 }
 
 void
-cpp_generator::GenerateBinaryExpr(const binary_expr& binaryExpr)
+CPPGenerator::GenerateBinaryExpr(const BinaryExpr& binaryExpr)
 {
-  switch (binaryExpr.k) {
-    case binary_expr::kind::ADD:
-      this->os << "Add(";
+  binaryExpr.LeftExpr().AcceptVisitor(*this);
+
+  switch (binaryExpr.GetKind()) {
+    case BinaryExpr::Kind::Add:
+      os << "+";
       break;
-    case binary_expr::kind::SUB:
-      this->os << "Sub(";
+    case BinaryExpr::Kind::Sub:
+      os << "-";
       break;
-    case binary_expr::kind::MUL:
-      this->os << "Mul(";
+    case BinaryExpr::Kind::Mul:
+      os << "*";
       break;
-    case binary_expr::kind::DIV:
-      this->os << "Div(";
+    case BinaryExpr::Kind::Div:
+      os << "/";
       break;
-    case binary_expr::kind::MOD:
-      this->os << "Mod(";
+    case BinaryExpr::Kind::Mod:
+      os << "%";
       break;
   }
 
-  binaryExpr.left->accept(*this);
-
-  this->os << ", ";
-
-  binaryExpr.right->accept(*this);
-
-  this->os << ")";
+  binaryExpr.RightExpr().AcceptVisitor(*this);
 }
 
 namespace {
@@ -602,19 +746,19 @@ struct alignas(16) mat4 final
 } // namespace
 
 void
-cpp_generator::generate_builtin_types(const Program& program)
+CPPGenerator::generate_builtin_types(const Program& program)
 {
-  this->os << gBuiltinTypes;
+  os << gBuiltinTypes;
 
   this->generate_pixel_state(program);
 
-  this->blank();
+  this->Blank();
 
   this->generate_frame_state(program);
 }
 
 void
-cpp_generator::generate(const Func& fn, const param_list& params)
+CPPGenerator::generate(const Func& fn, const param_list& params)
 {
   std::vector<std::string> paramStringList;
 
@@ -637,7 +781,7 @@ cpp_generator::generate(const Func& fn, const param_list& params)
 
     std::ostringstream paramStream;
 
-    paramStream << this->to_string(*params.at(i)->mType);
+    paramStream << ToString(*params.at(i)->mType);
 
     paramStream << ' ';
 
@@ -646,85 +790,85 @@ cpp_generator::generate(const Func& fn, const param_list& params)
     paramStringList.emplace_back(paramStream.str());
   }
 
-  this->os << '(';
+  os << '(';
 
   for (size_t i = 0; i < paramStringList.size(); i++) {
 
-    this->os << paramStringList[i];
+    os << paramStringList[i];
 
     if ((i + 1) < paramStringList.size())
-      this->os << ", ";
+      os << ", ";
   }
 
-  this->os << ')';
+  os << ')';
 }
 
 void
-cpp_generator::generate(const Program& prg)
+CPPGenerator::Generate(const Program& prg)
 {
-  this->os << "#ifndef PT_H_INCLUDED" << std::endl;
-  this->os << "#define PT_H_INCLUDED" << std::endl;
+  os << "#ifndef PT_H_INCLUDED" << std::endl;
+  os << "#define PT_H_INCLUDED" << std::endl;
 
-  this->blank();
+  this->Blank();
 
-  this->os << "#include <vector>" << std::endl;
+  os << "#include <vector>" << std::endl;
 
-  this->blank();
+  this->Blank();
 
-  this->os << "#include <cstdint>" << std::endl;
-  this->os << "#include <cstddef>" << std::endl;
+  os << "#include <cstdint>" << std::endl;
+  os << "#include <cstddef>" << std::endl;
 
-  this->blank();
+  this->Blank();
 
-  this->os << "namespace pt {" << std::endl;
+  os << "namespace pt {" << std::endl;
 
-  this->blank();
+  this->Blank();
 
   this->generate_builtin_types(prg);
 
-  this->blank();
+  this->Blank();
 
-  this->os << "} // namespace pt" << std::endl;
+  os << "} // namespace pt" << std::endl;
 
-  this->blank();
+  this->Blank();
 
-  this->os << "#endif // PT_H_INCLUDED" << std::endl;
+  os << "#endif // PT_H_INCLUDED" << std::endl;
 
-  this->blank();
+  this->Blank();
 
-  this->os << "#ifdef PT_IMPLEMENTATION" << std::endl;
+  os << "#ifdef PT_IMPLEMENTATION" << std::endl;
 
-  this->blank();
+  this->Blank();
 
-  this->os << "#include <vector>" << std::endl;
+  os << "#include <vector>" << std::endl;
 
-  this->blank();
+  this->Blank();
 
-  this->os << "namespace pt {" << std::endl;
+  os << "namespace pt {" << std::endl;
 
-  // special case: no blank line needed here
+  // special case: no Blank line needed here
 
-  this->os << standard_impl;
+  os << standard_impl;
 
-  this->blank();
+  this->Blank();
 
-  this->os << "namespace {" << std::endl;
+  os << "namespace {" << std::endl;
 
-  this->blank();
+  this->Blank();
 
   this->generate_prototypes(prg);
 
-  this->blank();
+  this->Blank();
 
   this->generate_definitions(prg);
 
-  this->os << "} // namespace" << std::endl;
+  os << "} // namespace" << std::endl;
 
-  this->blank();
+  this->Blank();
 
-  this->os << "} // namespace pt" << std::endl;
+  os << "} // namespace pt" << std::endl;
 
-  this->blank();
+  this->Blank();
 
-  this->os << "#endif // PT_IMPLEMENTATION" << std::endl;
+  os << "#endif // PT_IMPLEMENTATION" << std::endl;
 }

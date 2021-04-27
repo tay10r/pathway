@@ -13,5 +13,6 @@ endif(PATHWAY_EXAMPLES)
 
 if(PATHWAY_TESTS)
   add_subdirectory(tests)
+  add_subdirectory(unit_tests)
   enable_testing()
 endif(PATHWAY_TESTS)
