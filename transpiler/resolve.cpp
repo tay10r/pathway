@@ -98,6 +98,8 @@ public:
   void Mutate(FuncCall& funcCall) const override
   {
     funcCall.QueueNameMatches(mSymbolTable.FindFuncs(funcCall.Identifier()));
+
+    funcCall.Recurse(*this);
   }
 
   void Mutate(unary_expr& unaryExpr) const override
@@ -147,7 +149,7 @@ private:
     assignmentStmt.RValue().AcceptMutator(exprSymbolResolver);
   }
 
-  void Mutate(compound_stmt& compoundStmt) override
+  void Mutate(CompoundStmt& compoundStmt) override
   {
     mSymbolTable.EnterScope();
 
@@ -156,23 +158,23 @@ private:
     mSymbolTable.ExitScope();
   }
 
-  void Mutate(return_stmt& returnStmt) override
+  void Mutate(ReturnStmt& returnStmt) override
   {
     ExprSymbolResolver exprSymbolResolver(mSymbolTable);
 
-    returnStmt.return_value->AcceptMutator(exprSymbolResolver);
+    returnStmt.ReturnValue().AcceptMutator(exprSymbolResolver);
   }
 
-  void Mutate(decl_stmt& s) override
+  void Mutate(DeclStmt& declStmt) override
   {
-    if (s.v->init_expr) {
+    if (declStmt.GetVarDecl().init_expr) {
 
       ExprSymbolResolver exprSymbolResolver(mSymbolTable);
 
-      s.v->init_expr->AcceptMutator(exprSymbolResolver);
+      declStmt.GetVarDecl().init_expr->AcceptMutator(exprSymbolResolver);
     }
 
-    mSymbolTable.Define(s.v.get());
+    mSymbolTable.Define(&declStmt.GetVarDecl());
   }
 
   SymbolTable mSymbolTable;

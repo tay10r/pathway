@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common.h"
 #include "expr.h"
 #include "type_environment.h"
 
@@ -36,6 +37,14 @@ public:
   {
     mSuccess = true;
     mType = Type(TypeID::Float, Variability::Unbound);
+  }
+
+  void Visit(const FuncCall& funcCall) override
+  {
+    const auto& funcDecl = funcCall.GetFuncDecl();
+
+    mType = funcDecl.ReturnType();
+    mSuccess = true;
   }
 
   void Visit(const BinaryExpr& binaryExpr) override

@@ -31,7 +31,18 @@ public:
     binaryExpr.Recurse(*this);
   }
 
-  void Visit(const FuncCall& funcCall) override { funcCall.Recurse(*this); }
+  void Visit(const FuncCall& funcCall) override
+  {
+    const auto& funcDecl = funcCall.GetFuncDecl();
+
+    if (funcDecl.ReferencesFrameState())
+      mReferencesFrameState = true;
+
+    if (funcDecl.ReferencesPixelState())
+      mReferencesPixelState = true;
+
+    funcCall.Recurse(*this);
+  }
 
   void Visit(const unary_expr& unaryExpr) override { unaryExpr.Recurse(*this); }
 
@@ -73,31 +84,33 @@ private:
   bool mReferencesPixelState = false;
 };
 
-class StmtGlobalStateReferenceChecker final : public stmt_visitor
+class StmtGlobalStateReferenceChecker final : public StmtVisitor
 {
 public:
   bool ReferencesFrameState() const noexcept { return mReferencesFrameState; }
 
   bool ReferencesPixelState() const noexcept { return mReferencesPixelState; }
 
-  void visit(const AssignmentStmt& assignmentStmt) override
+  void Visit(const AssignmentStmt& assignmentStmt) override
   {
     CheckExpr(assignmentStmt.LValue());
     CheckExpr(assignmentStmt.RValue());
   }
 
-  void visit(const decl_stmt& s) override
+  void Visit(const DeclStmt& declStmt) override
   {
-    if (s.v->init_expr)
-      CheckExpr(*s.v->init_expr);
+    if (declStmt.GetVarDecl().init_expr)
+      CheckExpr(*declStmt.GetVarDecl().init_expr);
   }
 
-  void visit(const return_stmt& s) override { CheckExpr(*s.return_value); }
-
-  void visit(const compound_stmt& s) override
+  void Visit(const ReturnStmt& returnStmt) override
   {
-    for (const auto& inner_stmt : *s.stmts)
-      inner_stmt->accept(*this);
+    CheckExpr(returnStmt.ReturnValue());
+  }
+
+  void Visit(const CompoundStmt& compoundStmt) override
+  {
+    compoundStmt.Recurse(*this);
   }
 
 private:
@@ -122,7 +135,7 @@ Func::ReferencesFrameState() const
 {
   StmtGlobalStateReferenceChecker checker;
 
-  this->mBody->accept(checker);
+  this->mBody->AcceptVisitor(checker);
 
   return checker.ReferencesFrameState();
 }
@@ -132,7 +145,7 @@ Func::ReferencesPixelState() const
 {
   StmtGlobalStateReferenceChecker checker;
 
-  this->mBody->accept(checker);
+  this->mBody->AcceptVisitor(checker);
 
   return checker.ReferencesPixelState();
 }

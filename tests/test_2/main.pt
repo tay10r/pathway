@@ -4,7 +4,7 @@ uniform vec3 gBgColor1 = vec3(1.0, 1.0, 1.0);
 
 uniform vec3 gBgColor2 = vec3(0.5, 0.7, 1.0);
 
-varying vec3
+vec3
 OnMiss(vec3 rayDir)
 {
   float t = (rayDir.y + 1.0) * 0.5;

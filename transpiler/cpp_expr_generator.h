@@ -37,6 +37,8 @@ public:
     (void)binaryExpr;
   }
 
+  void Visit(const FuncCall&) override {}
+
   void Visit(const unary_expr&) override {}
 
   void Visit(const GroupExpr&) override {}

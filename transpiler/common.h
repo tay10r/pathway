@@ -3,6 +3,7 @@
 #include "decl_name.h"
 #include "expr.h"
 #include "location.h"
+#include "stmt.h"
 #include "type.h"
 
 #include <map>
@@ -13,129 +14,12 @@
 #include <assert.h>
 #include <stdint.h>
 
-class Parser;
-
-struct Var;
-
-class AssignmentStmt;
-
-struct compound_stmt;
-struct decl_stmt;
-struct return_stmt;
-
-class stmt_visitor
-{
-public:
-  virtual ~stmt_visitor() = default;
-
-  virtual void visit(const AssignmentStmt&) = 0;
-
-  virtual void visit(const compound_stmt&) = 0;
-
-  virtual void visit(const decl_stmt&) = 0;
-
-  virtual void visit(const return_stmt&) = 0;
-};
-
-class StmtMutator
-{
-public:
-  virtual ~StmtMutator() {}
-
-  virtual void Mutate(AssignmentStmt&) = 0;
-
-  virtual void Mutate(compound_stmt&) = 0;
-
-  virtual void Mutate(decl_stmt&) = 0;
-
-  virtual void Mutate(return_stmt&) = 0;
-};
-
-struct stmt
-{
-  virtual ~stmt() = default;
-
-  virtual void accept(stmt_visitor& v) const = 0;
-
-  virtual void AcceptMutator(StmtMutator& m) = 0;
-};
-
-using stmt_list = std::vector<std::unique_ptr<stmt>>;
-
-class AssignmentStmt final : public stmt
-{
-public:
-  AssignmentStmt(Expr* lValue, Expr* rValue)
-    : mLValue(lValue)
-    , mRValue(rValue)
-  {}
-
-  void accept(stmt_visitor& v) const override { v.visit(*this); }
-
-  void AcceptMutator(StmtMutator& m) override { m.Mutate(*this); }
-
-  Expr& LValue() noexcept { return *mLValue; }
-  Expr& RValue() noexcept { return *mRValue; }
-
-  const Expr& LValue() const noexcept { return *mLValue; }
-  const Expr& RValue() const noexcept { return *mRValue; }
-
-private:
-  UniqueExprPtr mLValue;
-  UniqueExprPtr mRValue;
-};
-
-struct compound_stmt final : public stmt
-{
-  std::unique_ptr<stmt_list> stmts;
-
-  compound_stmt(stmt_list* stmts_)
-    : stmts(stmts_)
-  {}
-
-  void accept(stmt_visitor& v) const override { v.visit(*this); }
-
-  void AcceptMutator(StmtMutator& m) override { m.Mutate(*this); }
-
-  void Recurse(StmtMutator& m)
-  {
-    for (auto& innerStmt : *stmts)
-      innerStmt->AcceptMutator(m);
-  }
-};
-
-struct decl_stmt final : public stmt
-{
-  std::unique_ptr<Var> v;
-
-  decl_stmt(Var* v_)
-    : v(v_)
-  {}
-
-  void accept(stmt_visitor& v) const override { v.visit(*this); }
-
-  void AcceptMutator(StmtMutator& m) override { m.Mutate(*this); }
-};
-
-struct return_stmt final : public stmt
-{
-  UniqueExprPtr return_value;
-
-  return_stmt(Expr* rv)
-    : return_value(rv)
-  {}
-
-  void accept(stmt_visitor& v) const override { v.visit(*this); }
-
-  void AcceptMutator(StmtMutator& m) override { m.Mutate(*this); }
-};
-
 using param_list = std::vector<std::unique_ptr<Var>>;
 
 class Func final
 {
 public:
-  Func(Type* returnType, DeclName&& name, param_list* params, stmt* body)
+  Func(Type* returnType, DeclName&& name, param_list* params, Stmt* body)
     : mReturnType(returnType)
     , mName(std::move(name))
     , mParamList(params)
@@ -150,7 +34,7 @@ public:
 
   const param_list& ParamList() const noexcept { return *mParamList; }
 
-  const stmt& Body() const noexcept { return *mBody; }
+  const Stmt& Body() const noexcept { return *mBody; }
 
   const std::string& Identifier() const noexcept { return mName.Identifier(); }
 
@@ -159,9 +43,9 @@ public:
     mBody->AcceptMutator(mutator);
   }
 
-  void AcceptBodyAccessor(stmt_visitor& visitor) const
+  void AcceptBodyAccessor(StmtVisitor& visitor) const
   {
-    mBody->accept(visitor);
+    mBody->AcceptVisitor(visitor);
   }
 
   bool ReferencesGlobalState() const;
@@ -183,7 +67,7 @@ private:
 
   std::unique_ptr<param_list> mParamList;
 
-  std::unique_ptr<stmt> mBody;
+  std::unique_ptr<Stmt> mBody;
 };
 
 struct Var final
@@ -263,9 +147,9 @@ union semantic_value
 
   Func* as_func;
 
-  stmt_list* as_stmt_list;
+  StmtList* as_stmt_list;
 
-  stmt* as_stmt;
+  Stmt* as_stmt;
 
   ExprList* as_expr_list;
 

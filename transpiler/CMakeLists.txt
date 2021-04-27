@@ -12,6 +12,8 @@ bison_target(ptc_parse "${CMAKE_CURRENT_SOURCE_DIR}/parse.y"
 
 add_library(ptclib
   ${BISON_ptc_parse_OUTPUTS}
+  abort.h
+  abort.cpp
   check.h
   check.cpp
   common.h

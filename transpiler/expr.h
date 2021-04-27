@@ -368,6 +368,8 @@ public:
 
   const std::string& Identifier() const { return mName.Identifier(); }
 
+  const Func& GetFuncDecl() const { return *mResolvedFuncs.at(0); }
+
   Type GetType() const override;
 
   void QueueNameMatches(std::vector<const Func*> matches)
@@ -386,6 +388,8 @@ public:
     for (auto& arg : *mArgs)
       arg->AcceptMutator(mutator);
   }
+
+  bool Resolved() const { return mResolvedFuncs.size() == 1; }
 
 private:
   DeclName mName;

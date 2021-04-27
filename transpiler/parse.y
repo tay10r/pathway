@@ -266,7 +266,7 @@ stmt: compound_stmt
 
 stmt_list: stmt
          {
-           $$ = new stmt_list();
+           $$ = new StmtList();
            $$->emplace_back($1);
          }
          | stmt_list stmt
@@ -284,18 +284,18 @@ assignment_stmt: unary_expr '=' expr ';'
 
 decl_stmt: var_decl
          {
-           $$ = new decl_stmt($1);
+           $$ = new DeclStmt($1);
          }
 
 return_stmt: RETURN expr ';'
            {
-             $$ = new return_stmt($2);
+             $$ = new ReturnStmt($2);
            }
            ;
 
 compound_stmt: '{' stmt_list '}'
              {
-               $$ = new compound_stmt($2);
+               $$ = new CompoundStmt($2);
              }
              ;
 

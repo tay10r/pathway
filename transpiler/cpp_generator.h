@@ -1,10 +1,11 @@
 #pragma once
 
+#include "abort.h"
 #include "c_based_generator.h"
 
 class CPPGenerator final
   : public CBasedGenerator
-  , public stmt_visitor
+  , public StmtVisitor
   , public ExprVisitor
 {
 public:
@@ -15,7 +16,7 @@ public:
   void Generate(const Program& program) override;
 
 private:
-  void visit(const AssignmentStmt& assignmentStmt) override
+  void Visit(const AssignmentStmt& assignmentStmt) override
   {
     Indent();
 
@@ -28,39 +29,42 @@ private:
     this->os << ";" << std::endl;
   }
 
-  void visit(const compound_stmt& s) override
+  void Visit(const CompoundStmt& compoundStmt) override
   {
     Indent() << '{' << std::endl;
 
     IncreaseIndent();
 
-    for (const auto& inner_stmt : *s.stmts)
-      inner_stmt->accept(*this);
+    compoundStmt.Recurse(*this);
 
     DecreaseIndent();
 
     Indent() << '}' << std::endl;
   }
 
-  void visit(const decl_stmt& s) override
+  void Visit(const DeclStmt& declStmt) override
   {
-    Indent() << ToString(*s.v->mType) << ' ' << s.v->name.Identifier();
+    const auto& varDecl = declStmt.GetVarDecl();
 
-    if (s.v->init_expr) {
+    Indent() << ToString(*varDecl.mType);
+    os << ' ';
+    os << varDecl.Identifier();
+
+    if (varDecl.init_expr) {
 
       this->os << " = ";
 
-      s.v->init_expr->AcceptVisitor(*this);
+      varDecl.init_expr->AcceptVisitor(*this);
     }
 
     this->os << ';' << std::endl;
   }
 
-  void visit(const return_stmt& s) override
+  void Visit(const ReturnStmt& returnStmt) override
   {
     Indent() << "return ";
 
-    s.return_value->AcceptVisitor(*this);
+    returnStmt.ReturnValue().AcceptVisitor(*this);
 
     this->os << ';' << std::endl;
   }
@@ -79,7 +83,7 @@ private:
 
   void Visit(const type_constructor& type_ctor) override
   {
-    this->os << ToString(type_ctor.mType) << '{';
+    this->os << ToString(type_ctor.mType) << '(';
 
     for (size_t i = 0; i < type_ctor.args->size(); i++) {
 
@@ -89,12 +93,13 @@ private:
         this->os << ", ";
     }
 
-    this->os << '}';
+    this->os << ')';
   }
 
   void Visit(const VarRef& v) override
   {
-    assert(v.HasResolvedVar());
+    if (!v.HasResolvedVar())
+      ABORT("Variable '", v.Identifier(), "' as never resolved.");
 
     if (v.ResolvedVar().IsUniformGlobal())
       this->os << "frame.";
@@ -111,9 +116,9 @@ private:
     os << ')';
   }
 
-  void Visit(const unary_expr& e) override
+  void Visit(const unary_expr& unaryExpr) override
   {
-    switch (e.k) {
+    switch (unaryExpr.k) {
       case unary_expr::kind::LOGICAL_NOT:
         this->os << "!";
         break;
@@ -124,15 +129,42 @@ private:
         this->os << "-";
         break;
     }
+
+    unaryExpr.Recurse(*this);
   }
 
   void Visit(const BinaryExpr& e) override { GenerateBinaryExpr(e); }
 
   void Visit(const FuncCall& funcCall) override
   {
-    os << funcCall.Identifier() << "(";
+    if (!funcCall.Resolved()) {
+      ABORT("Function '", funcCall.Identifier(), "' was never resolved.");
+    }
+
+    const auto& funcDecl = funcCall.GetFuncDecl();
 
     const auto& args = funcCall.Args();
+
+    os << funcCall.Identifier() << "(";
+
+    auto refsFrame = funcDecl.ReferencesFrameState();
+    auto refsPixel = funcDecl.ReferencesPixelState();
+
+    if (refsFrame) {
+
+      os << "frame";
+
+      if (!args.empty() || refsPixel)
+        os << ", ";
+    }
+
+    if (refsPixel) {
+
+      os << "pixel";
+
+      if (!args.empty())
+        os << ", ";
+    }
 
     for (size_t i = 0; i < args.size(); i++) {
 

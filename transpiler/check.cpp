@@ -53,7 +53,7 @@ private:
   std::ostream& es;
 };
 
-class ReturnStmtTypeChecker final : public stmt_visitor
+class ReturnStmtTypeChecker final : public StmtVisitor
 {
 public:
   ReturnStmtTypeChecker(Type expectedReturnType, check_context& ctx_)
@@ -61,19 +61,18 @@ public:
     , ctx(ctx_)
   {}
 
-  void visit(const AssignmentStmt&) override {}
+  void Visit(const AssignmentStmt&) override {}
 
-  void visit(const compound_stmt& s) override
+  void Visit(const CompoundStmt& compoundStmt) override
   {
-    for (const auto& inner_stmt : *s.stmts)
-      inner_stmt->accept(*this);
+    compoundStmt.Recurse(*this);
   }
 
-  void visit(const decl_stmt&) override {}
+  void Visit(const DeclStmt&) override {}
 
-  void visit(const return_stmt& s) override
+  void Visit(const ReturnStmt& s) override
   {
-    const auto& ret_value = *s.return_value;
+    const auto& ret_value = s.ReturnValue();
 
     if (ret_value.GetType() != mExpectedReturnType) {
       this->ctx.emit_error(ret_value.GetLocation())
