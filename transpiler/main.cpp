@@ -135,16 +135,37 @@ private:
 const char* options = R"(
 options:
   -h, --help            : Print this list of options.
+
   -l, --language <LANG> : Specify the output language.
+
   -o, --output <PATH>   : Specify the output path.
+
+  --only-if-different   : The output file is only written if it's different from
+                          the existing one. Does not have an effect when there
+                          is no existing output file.
 )";
 
 void
-print_help(const char* argv0)
+PrintHelp(const char* argv0)
 {
   std::cout << "usage: " << argv0 << " [options] [source_path]" << std::endl;
 
   std::cout << options;
+}
+
+std::optional<std::string>
+ReadWholeFile(const char* path)
+{
+  std::ifstream file(path);
+
+  if (!file.good())
+    return {};
+
+  std::ostringstream stream;
+
+  stream << file.rdbuf();
+
+  return stream.str();
 }
 
 } // namespace
@@ -160,6 +181,8 @@ main(int argc, char** argv)
 
   bool listDependencies = false;
 
+  bool onlyIfDifferent = false;
+
   for (int i = 1; i < argc; i++) {
     if ((strcmp(argv[i], "--output") == 0) || (strcmp(argv[i], "-o") == 0)) {
       if ((i + 1) >= argc) {
@@ -169,6 +192,8 @@ main(int argc, char** argv)
       }
       output_path = argv[i + 1];
       i++;
+    } else if (strcmp(argv[i], "--only-if-different") == 0) {
+      onlyIfDifferent = true;
     } else if ((strcmp(argv[i], "--language") == 0) ||
                (strcmp(argv[i], "-l") == 0)) {
       if ((i + 1) >= argc) {
@@ -182,7 +207,7 @@ main(int argc, char** argv)
       listDependencies = true;
     } else if ((strcmp(argv[i], "--help") == 0) ||
                (strcmp(argv[i], "-h") == 0)) {
-      print_help(argv[0]);
+      PrintHelp(argv[0]);
       return EXIT_FAILURE;
     } else if (argv[i][0] == '-') {
       std::cerr << argv[0] << ": unknown option '" << argv[i] << "'"
@@ -253,6 +278,16 @@ main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
+  auto output_str = output_stream.str();
+
+  if (onlyIfDifferent) {
+
+    auto existing = ReadWholeFile(output_path.c_str());
+
+    if (existing == output_str)
+      return EXIT_SUCCESS;
+  }
+
   std::ofstream output_file(output_path.c_str());
 
   if (!output_file.good()) {
@@ -261,7 +296,7 @@ main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
-  output_file << output_stream.str();
+  output_file << output_str;
 
   return EXIT_SUCCESS;
 }
