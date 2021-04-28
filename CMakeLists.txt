@@ -5,6 +5,7 @@ project(pathway)
 option(PATHWAY_EXAMPLES "Whether or not to build the examples." OFF)
 option(PATHWAY_TESTS    "Whether or not to build the tests." OFF)
 
+add_subdirectory(runtime)
 add_subdirectory(transpiler)
 
 if(PATHWAY_EXAMPLES)
@@ -12,7 +13,7 @@ if(PATHWAY_EXAMPLES)
 endif(PATHWAY_EXAMPLES)
 
 if(PATHWAY_TESTS)
-  add_subdirectory(tests)
+  #add_subdirectory(tests)
   add_subdirectory(unit_tests)
   enable_testing()
 endif(PATHWAY_TESTS)

@@ -8,6 +8,7 @@ FetchContent_Declare(googletest
 FetchContent_MakeAvailable(googletest)
 
 add_executable(ptc_unit_tests
+  runtime.cpp
   cpp_expr_generation.cpp
   string_to_expr.h
   string_to_expr.cpp
@@ -18,7 +19,7 @@ if(NOT MSVC)
   target_compile_options(ptc_unit_tests PRIVATE -Wall -Wextra -Werror -Wfatal-errors)
 endif(NOT MSVC)
 
-target_link_libraries(ptc_unit_tests PRIVATE gtest gtest_main ptclib)
+target_link_libraries(ptc_unit_tests PRIVATE gtest gtest_main ptclib pathway_runtime)
 
 target_include_directories(ptc_unit_tests
   PRIVATE
