@@ -463,8 +463,13 @@ public:
 
   size_t Size() const noexcept { return mIndices.size(); }
 
+  auto Indices() const noexcept -> const std::vector<size_t>&
+  {
+    return mIndices;
+  }
+
 private:
-  std::vector<std::size_t> mIndices;
+  std::vector<size_t> mIndices;
 };
 
 class MemberExpr final : public Expr

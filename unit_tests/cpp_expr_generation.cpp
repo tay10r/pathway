@@ -30,7 +30,10 @@ public:
     return it->second;
   }
 
-  bool IsVectorTypeImpl(const Expr&) const { return mExpectingVectorType; }
+  auto GetVectorComponentCountImpl(const Expr&) const -> std::optional<size_t>
+  {
+    return mExpectedVectorType;
+  }
 
   void DefineVarOrigin(const std::string& name, cpp::VarOrigin origin)
   {
@@ -42,10 +45,13 @@ public:
     mGlobalsUsageMap.emplace(name, usage);
   }
 
-  void ExpectVectorType() { mExpectingVectorType = true; }
+  void ExpectVectorType(size_t componentCount)
+  {
+    mExpectedVectorType = componentCount;
+  }
 
 private:
-  bool mExpectingVectorType = false;
+  std::optional<size_t> mExpectedVectorType;
 
   std::map<std::string, cpp::GlobalsUsage> mGlobalsUsageMap;
 
@@ -70,7 +76,7 @@ TEST(CppExpr, MemberExprAsSwizzle)
 {
   FakeExprEnv env;
 
-  env.ExpectVectorType();
+  env.ExpectVectorType(3);
 
   auto out = RunTest(env, "a.xzy");
 

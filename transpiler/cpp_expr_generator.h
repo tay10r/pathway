@@ -44,9 +44,12 @@ public:
 
   /// @brief Used to determine whether a member expression is a swizzle or a
   /// struct member access.
-  auto IsVectorType(const Expr& expr) const -> bool
+  ///
+  /// @return If the expression is a vector, then the number of components in
+  /// the vector is returned.
+  auto GetVectorComponentCount(const Expr& expr) const -> std::optional<size_t>
   {
-    return GetDerived().IsVectorTypeImpl(expr);
+    return GetDerived().GetVectorComponentCountImpl(expr);
   }
 
 private:
@@ -188,15 +191,56 @@ public:
 
   void Visit(const MemberExpr& memberExpr) override
   {
-    memberExpr.Recurse(*this);
+    const auto& baseExpr = memberExpr.BaseExpr();
 
-    if (mExprEnv.IsVectorType(memberExpr.BaseExpr()))
-      mStream << '.' << memberExpr.MemberName().Identifier();
-    else
-      mStream << '.' << memberExpr.MemberName().Identifier();
+    const auto& memberName = memberExpr.MemberName().Identifier();
+
+    auto components = mExprEnv.GetVectorComponentCount(memberExpr.BaseExpr());
+    if (components) {
+      EncodeSwizzle(baseExpr, memberName, *components);
+    } else {
+      EncodeStructMemberRef(baseExpr, memberName);
+    }
   }
 
 private:
+  void EncodeStructMemberRef(const Expr& baseExpr,
+                             const std::string& identifier)
+  {
+    baseExpr.AcceptVisitor(*this);
+
+    mStream << '.' << identifier;
+  }
+
+  void EncodeSwizzle(const Expr& baseExpr,
+                     const std::string& pattern,
+                     size_t components)
+  {
+    auto swizzle = Swizzle::Make(pattern, components);
+
+    if (!swizzle) {
+      EncodeStructMemberRef(baseExpr, pattern);
+      return;
+    }
+
+    mStream << "swizzle<";
+
+    for (size_t i = 0; i < swizzle->Size(); i++) {
+
+      mStream << swizzle->At(i);
+
+      if ((i + 1) < swizzle->Size()) {
+        mStream << ", ";
+      }
+    }
+
+    mStream << ">::get(";
+
+    baseExpr.AcceptVisitor(*this);
+
+    mStream << ')';
+  }
+
   const ExprEnvironment<DerivedExprEnv>& mExprEnv;
 
   std::ostringstream mStream;
