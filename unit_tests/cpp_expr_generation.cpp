@@ -30,6 +30,8 @@ public:
     return it->second;
   }
 
+  bool IsVectorTypeImpl(const Expr&) const { return mExpectingVectorType; }
+
   void DefineVarOrigin(const std::string& name, cpp::VarOrigin origin)
   {
     mVarOriginMap.emplace(name, origin);
@@ -40,7 +42,11 @@ public:
     mGlobalsUsageMap.emplace(name, usage);
   }
 
+  void ExpectVectorType() { mExpectingVectorType = true; }
+
 private:
+  bool mExpectingVectorType = false;
+
   std::map<std::string, cpp::GlobalsUsage> mGlobalsUsageMap;
 
   std::map<std::string, cpp::VarOrigin> mVarOriginMap;
@@ -50,6 +56,35 @@ std::string
 RunTest(const FakeExprEnv&, const std::string& str);
 
 } // namespace
+
+TEST(CppExpr, MemberExprAsStructField)
+{
+  FakeExprEnv env;
+
+  auto out = RunTest(env, "a.memb");
+
+  EXPECT_EQ(out, "a.memb");
+}
+
+TEST(CppExpr, MemberExprAsSwizzle)
+{
+  FakeExprEnv env;
+
+  env.ExpectVectorType();
+
+  auto out = RunTest(env, "a.xzy");
+
+  EXPECT_EQ(out, "swizzle<0, 2, 1>::get(a)");
+}
+
+TEST(CppExpr, GroupExpr)
+{
+  FakeExprEnv env;
+
+  auto out = RunTest(env, "(1 + 2)");
+
+  EXPECT_EQ(out, "(int_type(1) + int_type(2))");
+}
 
 TEST(CppExpr, UnaryExpr)
 {

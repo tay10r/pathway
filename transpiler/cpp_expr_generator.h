@@ -42,6 +42,13 @@ public:
     return GetDerived().GetVarOriginImpl(varRef);
   }
 
+  /// @brief Used to determine whether a member expression is a swizzle or a
+  /// struct member access.
+  auto IsVectorType(const Expr& expr) const -> bool
+  {
+    return GetDerived().IsVectorTypeImpl(expr);
+  }
+
 private:
   const Derived& GetDerived() const noexcept
   {
@@ -148,7 +155,14 @@ public:
     unaryExpr.Recurse(*this);
   }
 
-  void Visit(const GroupExpr&) override {}
+  void Visit(const GroupExpr& groupExpr) override
+  {
+    mStream << '(';
+
+    groupExpr.Recurse(*this);
+
+    mStream << ')';
+  }
 
   void Visit(const VarRef& varRef) override
   {
@@ -172,7 +186,15 @@ public:
 
   void Visit(const type_constructor&) override {}
 
-  void Visit(const MemberExpr&) override {}
+  void Visit(const MemberExpr& memberExpr) override
+  {
+    memberExpr.Recurse(*this);
+
+    if (mExprEnv.IsVectorType(memberExpr.BaseExpr()))
+      mStream << '.' << memberExpr.MemberName().Identifier();
+    else
+      mStream << '.' << memberExpr.MemberName().Identifier();
+  }
 
 private:
   const ExprEnvironment<DerivedExprEnv>& mExprEnv;
