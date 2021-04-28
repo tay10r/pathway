@@ -1,6 +1,6 @@
 #include "check.h"
 
-#include "common.h"
+#include "program.h"
 
 #include <ostream>
 
@@ -109,7 +109,7 @@ public:
     // TODO : global vars
   }
 
-  void type_check(const Func& func)
+  void type_check(const FuncDecl& func)
   {
     ReturnStmtTypeChecker returnStmtTypeChecker(func.ReturnType(), this->ctx);
 
@@ -118,8 +118,8 @@ public:
 
   void CheckEntryPoints()
   {
-    const Func* pixelSampler = nullptr;
-    const Func* pixelEncoder = nullptr;
+    const FuncDecl* pixelSampler = nullptr;
+    const FuncDecl* pixelEncoder = nullptr;
 
     for (const auto& func : this->ctx.program.Funcs()) {
 
@@ -159,35 +159,35 @@ public:
     }
   }
 
-  void CheckPixelSamplerSignature(const Func& fn)
+  void CheckPixelSamplerSignature(const FuncDecl& fn)
   {
     if (fn.ReturnType() != TypeID::Void) {
       this->ctx.emit_error(fn.GetNameLocation())
         << "return type should be type 'void'" << std::endl;
     }
 
-    if (fn.ParamList().size() != 1) {
+    if (fn.GetParamList().size() != 1) {
       this->ctx.emit_error(fn.GetNameLocation())
         << "there should only be one parameter to this function." << std::endl;
     }
 
-    if (fn.ParamList().size() < 1)
+    if (fn.GetParamList().size() < 1)
       return;
 
-    if (*fn.ParamList().at(0)->mType != TypeID::Vec2) {
+    if (fn.GetParamList().at(0)->GetTypeID() != TypeID::Vec2) {
       this->ctx.emit_error(fn.GetNameLocation())
         << "parameter should be type 'vec2'" << std::endl;
     }
   }
 
-  void CheckPixelEncoderSignature(const Func& fn)
+  void CheckPixelEncoderSignature(const FuncDecl& fn)
   {
     if (fn.ReturnType() != TypeID::Vec4) {
       this->ctx.emit_error(fn.GetNameLocation())
         << "return type should be type 'vec4'" << std::endl;
     }
 
-    if (!fn.ParamList().empty()) {
+    if (!fn.GetParamList().empty()) {
       this->ctx.emit_error(fn.GetNameLocation())
         << "there should be no parameters to this function." << std::endl;
     }

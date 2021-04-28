@@ -16,10 +16,10 @@ add_library(ptclib
   abort.cpp
   check.h
   check.cpp
-  common.h
-  common.cpp
   cpp_generator.h
   cpp_generator.cpp
+  decl.h
+  decl.cpp
   expr.h
   expr.cpp
   lexer.h
@@ -28,6 +28,8 @@ add_library(ptclib
   location.cpp
   parse.h
   parse.cpp
+  program.h
+  program.cpp
   resolve.h
   resolve.cpp
   type.h

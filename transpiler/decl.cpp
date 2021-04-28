@@ -1,15 +1,15 @@
-#include "common.h"
+#include "decl.h"
 
 #include <ostream>
 
 bool
-Var::IsVaryingGlobal() const
+VarDecl::IsVaryingGlobal() const
 {
   return mIsGlobal && mType->IsVaryingOrUnbound();
 }
 
 bool
-Var::IsUniformGlobal() const
+VarDecl::IsUniformGlobal() const
 {
   return mIsGlobal && mType->IsUniform();
 }
@@ -99,8 +99,8 @@ public:
 
   void Visit(const DeclStmt& declStmt) override
   {
-    if (declStmt.GetVarDecl().init_expr)
-      CheckExpr(*declStmt.GetVarDecl().init_expr);
+    if (declStmt.GetVarDecl().HasInitExpr())
+      CheckExpr(declStmt.GetVarDecl().InitExpr());
   }
 
   void Visit(const ReturnStmt& returnStmt) override
@@ -131,7 +131,7 @@ private:
 } // namespace
 
 bool
-Func::ReferencesFrameState() const
+FuncDecl::ReferencesFrameState() const
 {
   StmtGlobalStateReferenceChecker checker;
 
@@ -141,7 +141,7 @@ Func::ReferencesFrameState() const
 }
 
 bool
-Func::ReferencesPixelState() const
+FuncDecl::ReferencesPixelState() const
 {
   StmtGlobalStateReferenceChecker checker;
 
@@ -151,43 +151,25 @@ Func::ReferencesPixelState() const
 }
 
 bool
-Func::ReferencesGlobalState() const
+FuncDecl::ReferencesGlobalState() const
 {
   return ReferencesFrameState() || ReferencesPixelState();
 }
 
 bool
-Func::IsEntryPoint() const
+FuncDecl::IsEntryPoint() const
 {
   return IsPixelSampler() || IsPixelEncoder();
 }
 
 bool
-Func::IsPixelSampler() const
+FuncDecl::IsPixelSampler() const
 {
   return this->mName.Identifier() == "SamplePixel";
 }
 
 bool
-Func::IsPixelEncoder() const
+FuncDecl::IsPixelEncoder() const
 {
   return this->mName.Identifier() == "EncodePixel";
-}
-
-void
-Program::AppendGlobalVar(Var* globalVar)
-{
-  globalVar->MarkAsGlobal();
-
-  mGlobalVars.emplace_back(globalVar);
-
-  switch (globalVar->GetVariability()) {
-    case Variability::Uniform:
-      mUniformGlobalVars.emplace_back(globalVar);
-      break;
-    case Variability::Varying:
-    case Variability::Unbound:
-      mVaryingGlobalVars.emplace_back(globalVar);
-      break;
-  }
 }

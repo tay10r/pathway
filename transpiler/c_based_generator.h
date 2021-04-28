@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common.h"
 #include "generator.h"
+#include "program.h"
 
 #include <sstream>
 

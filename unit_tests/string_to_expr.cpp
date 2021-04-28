@@ -1,8 +1,8 @@
 #include "string_to_expr.h"
 
-#include "common.h"
 #include "lexer.h"
 #include "parse.h"
+#include "program.h"
 #include "program_consumer.h"
 #include "syntax_error_observer.h"
 

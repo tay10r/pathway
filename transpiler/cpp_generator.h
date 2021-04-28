@@ -46,15 +46,15 @@ private:
   {
     const auto& varDecl = declStmt.GetVarDecl();
 
-    Indent() << ToString(*varDecl.mType);
+    Indent() << ToString(varDecl.GetType());
     os << ' ';
     os << varDecl.Identifier();
 
-    if (varDecl.init_expr) {
+    if (varDecl.HasInitExpr()) {
 
       this->os << " = ";
 
-      varDecl.init_expr->AcceptVisitor(*this);
+      varDecl.InitExpr().AcceptVisitor(*this);
     }
 
     this->os << ';' << std::endl;
@@ -191,13 +191,13 @@ private:
 
   void generate_builtin_types(const Program& program);
 
-  void generate(const Func& fn, const param_list& params);
+  void generate(const FuncDecl& fn, const ParamList& params);
 
-  std::ostream& generate_header(const Func& fn)
+  std::ostream& generate_header(const FuncDecl& fn)
   {
     this->os << "auto " << fn.Identifier();
 
-    this->generate(fn, fn.ParamList());
+    this->generate(fn, fn.GetParamList());
 
     this->os << " noexcept -> " << ToString(fn.ReturnType());
 

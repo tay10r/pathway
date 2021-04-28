@@ -1,8 +1,7 @@
-#include "common.h"
-
 #include "check.h"
 #include "lexer.h"
 #include "parse.h"
+#include "program.h"
 #include "program_consumer.h"
 #include "resolve.h"
 #include "syntax_error_observer.h"

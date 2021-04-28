@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-struct Var;
+class VarDecl;
 
 struct unary_expr;
 struct type_constructor;
@@ -195,7 +195,7 @@ public:
 
   bool HasResolvedVar() const noexcept { return !!mResolvedVar; }
 
-  const Var& ResolvedVar() const
+  const VarDecl& ResolvedVar() const
   {
     assert(mResolvedVar);
     return *mResolvedVar;
@@ -203,14 +203,14 @@ public:
 
   const std::string& Identifier() const noexcept { return mName.Identifier(); }
 
-  void Resolve(const Var* v) { mResolvedVar = v; }
+  void Resolve(const VarDecl* v) { mResolvedVar = v; }
 
   Type GetType() const override;
 
 private:
   DeclName mName;
 
-  const Var* mResolvedVar = nullptr;
+  const VarDecl* mResolvedVar = nullptr;
 };
 
 class GroupExpr final : public Expr
@@ -343,7 +343,7 @@ private:
   Kind mKind;
 };
 
-class Func;
+class FuncDecl;
 
 class FuncCall final : public Expr
 {
@@ -368,11 +368,11 @@ public:
 
   const std::string& Identifier() const { return mName.Identifier(); }
 
-  const Func& GetFuncDecl() const { return *mResolvedFuncs.at(0); }
+  const FuncDecl& GetFuncDecl() const { return *mResolvedFuncs.at(0); }
 
   Type GetType() const override;
 
-  void QueueNameMatches(std::vector<const Func*> matches)
+  void QueueNameMatches(std::vector<const FuncDecl*> matches)
   {
     mResolvedFuncs = std::move(matches);
   }
@@ -396,7 +396,7 @@ private:
   std::unique_ptr<ExprList> mArgs;
   /// Only one of these are going to be right, which isn't known until type
   /// coercion.
-  std::vector<const Func*> mResolvedFuncs;
+  std::vector<const FuncDecl*> mResolvedFuncs;
 };
 
 struct type_constructor final : public Expr

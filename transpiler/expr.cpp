@@ -1,13 +1,13 @@
 #include "expr.h"
 
-#include "common.h"
+#include "decl.h"
 
 Type
 VarRef::GetType() const
 {
   assert(mResolvedVar);
 
-  return *mResolvedVar->mType;
+  return mResolvedVar->GetType();
 }
 
 auto

@@ -1,15 +1,17 @@
 #include "resolve.h"
 
-#include "common.h"
+#include "program.h"
+
+#include <map>
 
 namespace {
 
 class Scope final
 {
 public:
-  void Define(const Var* v) { mVarMap.emplace(v->name.Identifier(), v); }
+  void Define(const VarDecl* v) { mVarMap.emplace(v->Identifier(), v); }
 
-  auto FindVar(const std::string& name) const -> const Var*
+  auto FindVar(const std::string& name) const -> const VarDecl*
   {
     auto it = mVarMap.find(name);
 
@@ -17,7 +19,7 @@ public:
   }
 
 private:
-  std::map<std::string, const Var*> mVarMap;
+  std::map<std::string, const VarDecl*> mVarMap;
 };
 
 class SymbolTable final
@@ -36,16 +38,16 @@ public:
     mLocalScopes.pop_back();
   }
 
-  void Define(const Var* v)
+  void Define(const VarDecl* v)
   {
     assert(!mLocalScopes.empty());
 
     mLocalScopes.back().Define(v);
   }
 
-  auto FindFuncs(const std::string& name) const -> std::vector<const Func*>
+  auto FindFuncs(const std::string& name) const -> std::vector<const FuncDecl*>
   {
-    std::vector<const Func*> matches;
+    std::vector<const FuncDecl*> matches;
 
     for (const auto& func : mProgram.Funcs()) {
       if (func->HasName(name))
@@ -55,7 +57,7 @@ public:
     return matches;
   }
 
-  const Var* FindVar(const std::string& name) const
+  const VarDecl* FindVar(const std::string& name) const
   {
     for (auto it = mLocalScopes.rbegin(); it != mLocalScopes.rend(); it++) {
 
@@ -167,11 +169,11 @@ private:
 
   void Mutate(DeclStmt& declStmt) override
   {
-    if (declStmt.GetVarDecl().init_expr) {
+    if (declStmt.GetVarDecl().HasInitExpr()) {
 
       ExprSymbolResolver exprSymbolResolver(mSymbolTable);
 
-      declStmt.GetVarDecl().init_expr->AcceptMutator(exprSymbolResolver);
+      declStmt.GetVarDecl().InitExpr().AcceptMutator(exprSymbolResolver);
     }
 
     mSymbolTable.Define(&declStmt.GetVarDecl());
@@ -181,13 +183,13 @@ private:
 };
 
 void
-ResolveFunc(Program& program, Func& fn)
+ResolveFunc(Program& program, FuncDecl& fn)
 {
   SymbolTable symbolTable(program);
 
   symbolTable.EnterScope();
 
-  for (const auto& p : fn.ParamList())
+  for (const auto& p : fn.GetParamList())
     symbolTable.Define(p.get());
 
   StmtSymbolResolver resolver(symbolTable);

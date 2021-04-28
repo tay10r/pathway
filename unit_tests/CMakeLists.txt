@@ -30,4 +30,6 @@ set_target_properties(ptc_unit_tests
     OUTPUT_NAME "run_unit_tests"
     RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 
+add_test(NAME ptc_unit_tests COMMAND $<TARGET_FILE:ptc_unit_tests>)
+
 enable_testing()

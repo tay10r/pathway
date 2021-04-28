@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "decl.h"
 #include "expr.h"
 #include "type_environment.h"
 

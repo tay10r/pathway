@@ -554,11 +554,11 @@ CPPGenerator::generate_frame_state(const Program& program)
     Indent() << ToString(uniformVar->GetTypeID()) << " "
              << uniformVar->Identifier();
 
-    if (uniformVar->init_expr) {
+    if (uniformVar->HasInitExpr()) {
 
       os << " = ";
 
-      uniformVar->init_expr->AcceptVisitor(*this);
+      uniformVar->InitExpr().AcceptVisitor(*this);
     }
 
     os << ";" << std::endl;
@@ -758,7 +758,7 @@ CPPGenerator::generate_builtin_types(const Program& program)
 }
 
 void
-CPPGenerator::generate(const Func& fn, const param_list& params)
+CPPGenerator::generate(const FuncDecl& fn, const ParamList& params)
 {
   std::vector<std::string> paramStringList;
 
@@ -781,7 +781,7 @@ CPPGenerator::generate(const Func& fn, const param_list& params)
 
     std::ostringstream paramStream;
 
-    paramStream << ToString(*params.at(i)->mType);
+    paramStream << ToString(params.at(i)->GetType());
 
     paramStream << ' ';
 

@@ -6,10 +6,7 @@
 #include <memory>
 #include <vector>
 
-struct Var;
-
 class AssignmentStmt;
-
 class CompoundStmt;
 class DeclStmt;
 class ReturnStmt;
@@ -106,21 +103,25 @@ private:
   std::unique_ptr<StmtList> stmts;
 };
 
+class VarDecl;
+
 class DeclStmt final : public Stmt
 {
 public:
-  DeclStmt(Var* v_)
+  DeclStmt(VarDecl* v_)
     : mVarDecl(v_)
   {}
 
-  const Var& GetVarDecl() const noexcept { return *mVarDecl; }
+  VarDecl& GetVarDecl() noexcept { return *mVarDecl; }
+
+  const VarDecl& GetVarDecl() const noexcept { return *mVarDecl; }
 
   void AcceptVisitor(StmtVisitor& v) const override { v.Visit(*this); }
 
   void AcceptMutator(StmtMutator& m) override { m.Mutate(*this); }
 
 private:
-  std::unique_ptr<Var> mVarDecl;
+  std::unique_ptr<VarDecl> mVarDecl;
 };
 
 class ReturnStmt final : public Stmt

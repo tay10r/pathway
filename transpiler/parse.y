@@ -17,7 +17,7 @@ void yyerror(const Location* location,
   syntaxErrorObserver.ObserveSyntaxError(*location, errorMessage);
 }
 
-int yylex(semantic_value* value, Location* location, Lexer& lexer)
+int yylex(SemanticValue* value, Location* location, Lexer& lexer)
 {
   auto token = lexer.Lex();
 
@@ -26,11 +26,11 @@ int yylex(semantic_value* value, Location* location, Lexer& lexer)
   }
 
   if (token->Kind() == IDENTIFIER) {
-    value->as_string = new std::string(token->AsStringView());
+    value->asString = new std::string(token->AsStringView());
   } else if (token->Kind() == INT_LITERAL) {
-    value->as_int = token->AsInt();
+    value->asInt = token->AsInt();
   } else if (token->Kind() == FLOAT_LITERAL) {
-    value->as_float = token->AsDouble();
+    value->asFloat = token->AsDouble();
   }
 
   *location = token->GetLocation();
@@ -44,7 +44,7 @@ int yylex(semantic_value* value, Location* location, Lexer& lexer)
 
 %code requires {
 
-#include "common.h"
+#include "semantic_value.h"
 
 class Lexer;
 class ProgramConsumer;
@@ -55,7 +55,7 @@ class SyntaxErrorObserver;
 
 %define api.location.type {Location}
 
-%define api.value.type {semantic_value}
+%define api.value.type {SemanticValue}
 
 %define api.pure full
 
@@ -74,13 +74,13 @@ class SyntaxErrorObserver;
 
 %token END 0 "end of file"
 
-%token<as_int> INT_LITERAL "int literal"
+%token<asInt> INT_LITERAL "int literal"
 
-%token<as_float> FLOAT_LITERAL "float literal"
+%token<asFloat> FLOAT_LITERAL "float literal"
 
 %token<asBool> BOOL_LITERAL "bool literal"
 
-%token<as_string> IDENTIFIER "identifier"
+%token<asString> IDENTIFIER "identifier"
 
 %token RETURN "return"
 %token BREAK "break"
@@ -113,31 +113,31 @@ class SyntaxErrorObserver;
 %type <asVariability> variability "variability"
 %type <asType> type "type"
 
-%type <as_expr> primary_expr
-%type <as_expr> unary_expr
-%type <as_expr> postfix_expr
-%type <as_expr> multiplicative_expr
-%type <as_expr> additive_expr
-%type <as_expr> expr
+%type <asExpr> primary_expr
+%type <asExpr> unary_expr
+%type <asExpr> postfix_expr
+%type <asExpr> multiplicative_expr
+%type <asExpr> additive_expr
+%type <asExpr> expr
 
-%type <as_expr_list> expr_list
+%type <asExprList> expr_list
 
-%type <as_var> param_decl
+%type <asVarDecl> param_decl
 
-%type <as_param_list> param_list
+%type <asParamList> param_list
 
-%type <as_stmt_list> stmt_list
+%type <asStmtList> stmt_list
 
-%type <as_stmt> stmt
-%type <as_stmt> assignment_stmt
-%type <as_stmt> return_stmt
-%type <as_stmt> compound_stmt
+%type <asStmt> stmt
+%type <asStmt> assignment_stmt
+%type <asStmt> return_stmt
+%type <asStmt> compound_stmt
 
-%type <as_stmt> decl_stmt
+%type <asStmt> decl_stmt
 
-%type <as_var> var_decl
+%type <asVarDecl> var_decl
 
-%type <as_func> func
+%type <asFuncDecl> func
 
 %type <asProgram> program
 
@@ -222,23 +222,23 @@ type: type_name
 
 var_decl: type IDENTIFIER ';'
         {
-          $$ = new Var($1, DeclName($2, @2), nullptr);
+          $$ = new VarDecl($1, DeclName($2, @2), nullptr);
         }
         | type IDENTIFIER '=' expr ';'
         {
-          $$ = new Var($1, DeclName($2, @2), $4);
+          $$ = new VarDecl($1, DeclName($2, @2), $4);
         }
         ;
 
 param_decl: type IDENTIFIER
           {
-            $$ = new Var($1, DeclName($2, @2), nullptr);
+            $$ = new VarDecl($1, DeclName($2, @2), nullptr);
           }
           ;
 
 param_list: param_decl
           {
-            $$ = new param_list();
+            $$ = new ParamList();
             $$->emplace_back($1);
           }
           | param_list ',' param_decl
@@ -250,11 +250,11 @@ param_list: param_decl
 
 func: type IDENTIFIER '(' param_list ')' compound_stmt
     {
-      $$ = new Func($1, DeclName($2, @2), $4, $6);
+      $$ = new FuncDecl($1, DeclName($2, @2), $4, $6);
     }
     | type IDENTIFIER '(' ')' compound_stmt
     {
-      $$ = new Func($1, DeclName($2, @2), new param_list(), $5);
+      $$ = new FuncDecl($1, DeclName($2, @2), new ParamList(), $5);
     }
     ;
 
