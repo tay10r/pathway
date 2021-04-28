@@ -187,7 +187,61 @@ public:
     }
   }
 
-  void Visit(const TypeConstructor&) override {}
+  void Visit(const TypeConstructor& typeConstructor) override
+  {
+    switch (typeConstructor.GetType().ID()) {
+      case TypeID::Void:
+        break;
+      case TypeID::Int:
+        mStream << "int_type(";
+        EncodeExprList(typeConstructor.Args());
+        mStream << ")";
+        break;
+      case TypeID::Bool:
+        mStream << "bool(";
+        EncodeExprList(typeConstructor.Args());
+        mStream << ")";
+        break;
+      case TypeID::Float:
+        mStream << "float_type(";
+        EncodeExprList(typeConstructor.Args());
+        mStream << ")";
+        break;
+      case TypeID::Vec2:
+      case TypeID::Vec2i:
+        mStream << "vector_constructor<2>(";
+        EncodeExprList(typeConstructor.Args());
+        mStream << ")";
+        break;
+      case TypeID::Vec3:
+      case TypeID::Vec3i:
+        mStream << "vector_constructor<3>(";
+        EncodeExprList(typeConstructor.Args());
+        mStream << ")";
+        break;
+      case TypeID::Vec4:
+      case TypeID::Vec4i:
+        mStream << "vector_constructor<4>(";
+        EncodeExprList(typeConstructor.Args());
+        mStream << ")";
+        break;
+      case TypeID::Mat2:
+        mStream << "matrix_constructor<2, 2>(";
+        EncodeExprList(typeConstructor.Args());
+        mStream << ")";
+        break;
+      case TypeID::Mat3:
+        mStream << "matrix_constructor<3, 3>(";
+        EncodeExprList(typeConstructor.Args());
+        mStream << ")";
+        break;
+      case TypeID::Mat4:
+        mStream << "matrix_constructor<4, 4>(";
+        EncodeExprList(typeConstructor.Args());
+        mStream << ")";
+        break;
+    }
+  }
 
   void Visit(const MemberExpr& memberExpr) override
   {
@@ -204,6 +258,18 @@ public:
   }
 
 private:
+  void EncodeExprList(const ExprList& exprList)
+  {
+    for (size_t i = 0; i < exprList.size(); i++) {
+
+      exprList[i]->AcceptVisitor(*this);
+
+      if ((i + 1) < exprList.size()) {
+        mStream << ", ";
+      }
+    }
+  }
+
   void EncodeStructMemberRef(const Expr& baseExpr,
                              const std::string& identifier)
   {

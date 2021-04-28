@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <optional>
 
 enum class TypeID
 {
@@ -18,6 +19,9 @@ enum class TypeID
   Mat3,
   Mat4
 };
+
+auto
+GetVectorComponentCount(TypeID typeID) noexcept -> std::optional<size_t>;
 
 bool
 IsVecOrMat(TypeID typeID) noexcept;

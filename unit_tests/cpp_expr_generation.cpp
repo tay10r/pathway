@@ -63,6 +63,30 @@ RunTest(const FakeExprEnv&, const std::string& str);
 
 } // namespace
 
+TEST(CppExpr, TypeConstructor)
+{
+  FakeExprEnv env;
+
+  env.ExpectVectorType(3);
+
+  auto out = RunTest(env, "vec4(1.0, a.xz, b.y)");
+
+  EXPECT_EQ(out,
+            "vector_constructor<4>(float_type(1), swizzle<0, 2>::get(a), "
+            "swizzle<1>::get(b))");
+}
+
+TEST(CppExpr, MemberExprAsStructFieldFallback)
+{
+  FakeExprEnv env;
+
+  env.ExpectVectorType(3);
+
+  auto out = RunTest(env, "a.xzyw");
+
+  EXPECT_EQ(out, "a.xzyw");
+}
+
 TEST(CppExpr, MemberExprAsStructField)
 {
   FakeExprEnv env;

@@ -2,6 +2,32 @@
 
 #include <ostream>
 
+auto
+GetVectorComponentCount(TypeID typeID) noexcept -> std::optional<size_t>
+{
+  switch (typeID) {
+    case TypeID::Void:
+    case TypeID::Int:
+    case TypeID::Bool:
+    case TypeID::Float:
+    case TypeID::Mat2:
+    case TypeID::Mat3:
+    case TypeID::Mat4:
+      break;
+    case TypeID::Vec2:
+    case TypeID::Vec2i:
+      return 1;
+    case TypeID::Vec3:
+    case TypeID::Vec3i:
+      return 3;
+    case TypeID::Vec4:
+    case TypeID::Vec4i:
+      return 4;
+  }
+
+  return {};
+}
+
 bool
 IsVecOrMat(TypeID typeID) noexcept
 {
