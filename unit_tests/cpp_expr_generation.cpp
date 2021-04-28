@@ -6,67 +6,159 @@
 
 namespace {
 
+class FakeExprEnv final : public cpp::ExprEnvironment<FakeExprEnv>
+{
+public:
+  auto GetVarOriginImpl(const VarRef& varRef) const
+    -> std::optional<cpp::VarOrigin>
+  {
+    auto it = mVarOriginMap.find(varRef.Identifier());
+    if (it == mVarOriginMap.end())
+      return {};
+    else
+      return it->second;
+  }
+
+  auto GetGlobalsUsageImpl(const FuncCall& funcCall) const
+    -> std::optional<cpp::GlobalsUsage>
+  {
+    auto it = mGlobalsUsageMap.find(funcCall.Identifier());
+
+    if (it == mGlobalsUsageMap.end())
+      return {};
+
+    return it->second;
+  }
+
+  void DefineVarOrigin(const std::string& name, cpp::VarOrigin origin)
+  {
+    mVarOriginMap.emplace(name, origin);
+  }
+
+  void DefineGlobalsUsage(const std::string& name, cpp::GlobalsUsage usage)
+  {
+    mGlobalsUsageMap.emplace(name, usage);
+  }
+
+private:
+  std::map<std::string, cpp::GlobalsUsage> mGlobalsUsageMap;
+
+  std::map<std::string, cpp::VarOrigin> mVarOriginMap;
+};
+
 std::string
-RunTest(const UniqueExprPtr& expr);
+RunTest(const FakeExprEnv&, const std::string& str);
 
 } // namespace
 
-TEST(CppExpr, MulExprUniform)
+TEST(CppExpr, UnaryExpr)
 {
-  auto out = RunTest(StringToExpr("foo * bar"));
+  FakeExprEnv env;
 
-  EXPECT_EQ(out,
-            "i32: foo * bar\n"
-            "i64: foo * bar\n"
-            "sse2_i32x4: foo * bar\n");
+  auto out = RunTest(env, "!13");
+
+  EXPECT_EQ(out, "!int_type(13)");
 }
 
-TEST(CppExpr, MulExprVarying)
+TEST(CppExpr, FuncCallRequiringUniformGlobals_2)
 {
-  auto out = RunTest(StringToExpr("foo * bar"));
+  FakeExprEnv env;
 
-  EXPECT_EQ(out,
-            "i32: foo * bar\n"
-            "i64: foo * bar\n"
-            "sse2_i32x4: _mm_mul_ps(foo, bar)\n");
+  cpp::GlobalsUsage fooUsage;
+
+  fooUsage.usesUniformGlobals = true;
+
+  env.DefineGlobalsUsage("foo", fooUsage);
+
+  auto out = RunTest(env, "foo()");
+
+  EXPECT_EQ(out, "foo(frame)");
+}
+
+TEST(CppExpr, FuncCallRequiringUniformGlobals)
+{
+  FakeExprEnv env;
+
+  cpp::GlobalsUsage fooUsage;
+
+  fooUsage.usesUniformGlobals = true;
+
+  env.DefineGlobalsUsage("foo", fooUsage);
+
+  auto out = RunTest(env, "foo(2)");
+
+  EXPECT_EQ(out, "foo(frame, int_type(2))");
+}
+
+TEST(CppExpr, FuncCall)
+{
+  FakeExprEnv env;
+
+  auto out = RunTest(env, "foo(2)");
+
+  EXPECT_EQ(out, "foo(int_type(2))");
+}
+
+TEST(CppExpr, MulExpr_2)
+{
+  FakeExprEnv env;
+
+  env.DefineVarOrigin("foo", cpp::VarOrigin::UniformGlobal);
+  env.DefineVarOrigin("bar", cpp::VarOrigin::VaryingGlobal);
+
+  auto out = RunTest(env, "foo * bar");
+
+  EXPECT_EQ(out, "frame.foo * this->bar");
+}
+
+TEST(CppExpr, MulExpr)
+{
+  FakeExprEnv env;
+
+  auto out = RunTest(env, "foo * bar");
+
+  EXPECT_EQ(out, "foo * bar");
+}
+
+TEST(CppExpr, BoolLiteral)
+{
+  FakeExprEnv env;
+
+  auto out = RunTest(env, "false");
+
+  EXPECT_EQ(out, "false");
+}
+
+TEST(CppExpr, FloatLiteral)
+{
+  FakeExprEnv env;
+
+  auto out = RunTest(env, "1.0");
+
+  EXPECT_EQ(out, "float_type(1)");
 }
 
 TEST(CppExpr, IntLiteral)
 {
-  auto out = RunTest(StringToExpr("1"));
-  EXPECT_EQ(out,
-            "i32: 1l\n"
-            "i64: 1ll\n"
-            "sse2_i32x4: 1l\n");
+  FakeExprEnv env;
+
+  auto out = RunTest(env, "1");
+
+  EXPECT_EQ(out, "int_type(1)");
 }
 
 namespace {
 
 std::string
-RunTest(const UniqueExprPtr& expr)
+RunTest(const FakeExprEnv& exprEnv, const std::string& src)
 {
-  std::vector<std::shared_ptr<cpp::DataMode>> dataModes;
+  auto expr = StringToExpr(src);
 
-  dataModes.emplace_back(new cpp::I32_DataMode());
-  dataModes.emplace_back(new cpp::I64_DataMode());
-  dataModes.emplace_back(new cpp::SSE2_I32_DataMode());
+  cpp::ExprGenerator<FakeExprEnv> generator(exprEnv);
 
-  std::ostringstream outputStream;
+  expr->AcceptVisitor(generator);
 
-  for (auto dataMode : dataModes) {
-
-    cpp::ExprGenerator generator(dataMode);
-
-    expr->AcceptVisitor(generator);
-
-    outputStream << dataMode->ModeID() << ": ";
-
-    outputStream << generator.String();
-
-    outputStream << "\n";
-  }
-
-  return outputStream.str();
+  return generator.String();
 }
 
 } // namespace

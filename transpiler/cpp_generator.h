@@ -116,16 +116,16 @@ private:
     os << ')';
   }
 
-  void Visit(const unary_expr& unaryExpr) override
+  void Visit(const UnaryExpr& unaryExpr) override
   {
-    switch (unaryExpr.k) {
-      case unary_expr::kind::LOGICAL_NOT:
+    switch (unaryExpr.GetKind()) {
+      case UnaryExpr::Kind::LogicalNot:
         this->os << "!";
         break;
-      case unary_expr::kind::BITWISE_NOT:
+      case UnaryExpr::Kind::BitwiseNot:
         this->os << "~";
         break;
-      case unary_expr::kind::NEGATE:
+      case UnaryExpr::Kind::Negate:
         this->os << "-";
         break;
     }

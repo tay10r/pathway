@@ -44,7 +44,7 @@ public:
     funcCall.Recurse(*this);
   }
 
-  void Visit(const unary_expr& unaryExpr) override { unaryExpr.Recurse(*this); }
+  void Visit(const UnaryExpr& unaryExpr) override { unaryExpr.Recurse(*this); }
 
   void Visit(const GroupExpr& groupExpr) override { groupExpr.Recurse(*this); }
 

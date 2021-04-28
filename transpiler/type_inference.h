@@ -92,7 +92,7 @@ public:
     }
   }
 
-  void Visit(const unary_expr&) override {}
+  void Visit(const UnaryExpr&) override {}
 
   void Visit(const GroupExpr& groupExpr) override { groupExpr.Recurse(*this); }
 

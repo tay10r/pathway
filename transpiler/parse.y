@@ -22,14 +22,14 @@ int yylex(SemanticValue* value, Location* location, Lexer& lexer)
   auto token = lexer.Lex();
 
   if (!token) {
-    return END;
+    return TOK_END;
   }
 
-  if (token->Kind() == IDENTIFIER) {
+  if (token->Kind() == TOK_IDENTIFIER) {
     value->asString = new std::string(token->AsStringView());
-  } else if (token->Kind() == INT_LITERAL) {
+  } else if (token->Kind() == TOK_INT_LITERAL) {
     value->asInt = token->AsInt();
-  } else if (token->Kind() == FLOAT_LITERAL) {
+  } else if (token->Kind() == TOK_FLOAT_LITERAL) {
     value->asFloat = token->AsDouble();
   }
 
@@ -57,6 +57,8 @@ class SyntaxErrorObserver;
 
 %define api.value.type {SemanticValue}
 
+%define api.token.prefix {TOK_}
+
 %define api.pure full
 
 %lex-param {Lexer& lexer}
@@ -77,8 +79,11 @@ class SyntaxErrorObserver;
 %token<asInt> INT_LITERAL "int literal"
 
 %token<asFloat> FLOAT_LITERAL "float literal"
+%token<asFloat> PI "pi"
+%token<asFloat> INFINITY "infinity"
 
-%token<asBool> BOOL_LITERAL "bool literal"
+%token<asBool> TRUE "true"
+%token<asBool> FALSE "false"
 
 %token<asString> IDENTIFIER "identifier"
 
@@ -321,9 +326,21 @@ primary_expr: INT_LITERAL
             {
               $$ = new FloatLiteral($1, @1);
             }
-            | BOOL_LITERAL
+            | INFINITY
             {
-              $$ = new BoolLiteral($1, @1);
+              $$ = FloatLiteral::Infinity(@1);
+            }
+            | PI
+            {
+              $$ = FloatLiteral::Pi(@1);
+            }
+            | TRUE
+            {
+              $$ = new BoolLiteral(true, @1);
+            }
+            | FALSE
+            {
+              $$ = new BoolLiteral(false, @1);
             }
             | '(' expr ')'
             {
@@ -341,6 +358,10 @@ primary_expr: INT_LITERAL
             {
               $$ = new FuncCall(DeclName($1, @1), $3, @$);
             }
+            | IDENTIFIER '(' ')'
+            {
+              $$ = new FuncCall(DeclName($1, @1), new ExprList(), @$);
+            }
             ;
 
 postfix_expr: primary_expr
@@ -352,15 +373,15 @@ postfix_expr: primary_expr
 unary_expr: postfix_expr
           | '-' unary_expr
           {
-            $$ = new unary_expr($2, unary_expr::kind::NEGATE, @$);
+            $$ = new UnaryExpr($2, UnaryExpr::Kind::Negate, @$);
           }
           | '~' unary_expr
           {
-            $$ = new unary_expr($2, unary_expr::kind::BITWISE_NOT, @$);
+            $$ = new UnaryExpr($2, UnaryExpr::Kind::BitwiseNot, @$);
           }
           | '!' unary_expr
           {
-            $$ = new unary_expr($2, unary_expr::kind::LOGICAL_NOT, @$);
+            $$ = new UnaryExpr($2, UnaryExpr::Kind::LogicalNot, @$);
           }
           ;
 

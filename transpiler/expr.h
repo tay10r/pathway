@@ -3,17 +3,20 @@
 #include "decl_name.h"
 #include "type.h"
 
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
+#define _USE_MATH_DEFINES 1
+
 #include <assert.h>
+#include <math.h>
 #include <stdint.h>
 
 class VarDecl;
 
-struct unary_expr;
 struct type_constructor;
 
 class BoolLiteral;
@@ -24,6 +27,7 @@ class GroupExpr;
 class MemberExpr;
 class IntLiteral;
 class VarRef;
+class UnaryExpr;
 
 class ExprVisitor
 {
@@ -40,7 +44,7 @@ public:
 
   virtual void Visit(const BinaryExpr&) = 0;
 
-  virtual void Visit(const unary_expr&) = 0;
+  virtual void Visit(const UnaryExpr&) = 0;
 
   virtual void Visit(const GroupExpr&) = 0;
 
@@ -66,7 +70,7 @@ public:
 
   virtual void Mutate(BinaryExpr&) const = 0;
 
-  virtual void Mutate(unary_expr&) const = 0;
+  virtual void Mutate(UnaryExpr&) const = 0;
 
   virtual void Mutate(GroupExpr&) const = 0;
 
@@ -151,6 +155,16 @@ private:
 class FloatLiteral final : public Expr
 {
 public:
+  static FloatLiteral* Infinity(const Location& location)
+  {
+    return new FloatLiteral(std::numeric_limits<double>::infinity(), location);
+  }
+
+  static FloatLiteral* Pi(const Location& location)
+  {
+    return new FloatLiteral(M_PI, location);
+  }
+
   FloatLiteral(double value, const Location& location)
     : Expr(location)
     , mValue(value)
@@ -170,8 +184,6 @@ public:
 private:
   double mValue;
 };
-
-struct Var;
 
 class VarRef final : public Expr
 {
@@ -244,19 +256,20 @@ private:
   UniqueExprPtr mInnerExpr;
 };
 
-struct unary_expr final : public Expr
+class UnaryExpr final : public Expr
 {
-  enum class kind
+public:
+  enum class Kind
   {
-    LOGICAL_NOT,
-    BITWISE_NOT,
-    NEGATE
+    LogicalNot,
+    BitwiseNot,
+    Negate
   };
 
-  unary_expr(Expr* e, kind k_, const Location& loc_)
-    : Expr(loc_)
-    , mBaseExpr(e)
-    , k(k_)
+  UnaryExpr(Expr* expr, Kind kind, const Location& location)
+    : Expr(location)
+    , mBaseExpr(expr)
+    , mKind(kind)
   {}
 
   void AcceptMutator(const ExprMutator& mutator) override
@@ -265,6 +278,10 @@ struct unary_expr final : public Expr
   }
 
   void AcceptVisitor(ExprVisitor& v) const override { v.Visit(*this); }
+
+  const Expr& BaseExpr() const noexcept { return *mBaseExpr; }
+
+  Expr& BaseExpr() noexcept { return *mBaseExpr; }
 
   void Recurse(const ExprMutator& mutator)
   {
@@ -276,11 +293,14 @@ struct unary_expr final : public Expr
     mBaseExpr->AcceptVisitor(Visitor);
   }
 
+  Kind GetKind() const noexcept { return mKind; }
+
   Type GetType() const override { return mBaseExpr->GetType(); }
 
+private:
   UniqueExprPtr mBaseExpr;
 
-  kind k;
+  Kind mKind;
 };
 
 class BinaryExpr final : public Expr

@@ -104,10 +104,7 @@ public:
     funcCall.Recurse(*this);
   }
 
-  void Mutate(unary_expr& unaryExpr) const override
-  {
-    unaryExpr.Recurse(*this);
-  }
+  void Mutate(UnaryExpr& unaryExpr) const override { unaryExpr.Recurse(*this); }
 
   void Mutate(GroupExpr& groupExpr) const override { groupExpr.Recurse(*this); }
 

@@ -12,97 +12,106 @@ Token::Dump() const
   std::ostringstream stream;
 
   switch (static_cast<yytokentype>(mKind)) {
-    case YYEMPTY:
+    case TOK_YYEMPTY:
       stream << "YYEMPTY";
       break;
-    case END:
+    case TOK_END:
       stream << "END";
       break;
-    case YYerror:
+    case TOK_YYerror:
       stream << "YYerror";
       break;
-    case YYUNDEF:
+    case TOK_YYUNDEF:
       stream << "YYUNDEF";
       break;
-    case INT_LITERAL:
+    case TOK_INT_LITERAL:
       stream << "INT_LITERAL";
       break;
-    case FLOAT_LITERAL:
+    case TOK_FLOAT_LITERAL:
       stream << "FLOAT_LITERAL";
       break;
-    case BOOL_LITERAL:
-      stream << "BOOL_LITERAL";
+    case TOK_PI:
+      stream << "PI";
       break;
-    case IDENTIFIER:
+    case TOK_INFINITY:
+      stream << "INFINITY";
+      break;
+    case TOK_TRUE:
+      stream << "TRUE";
+      break;
+    case TOK_FALSE:
+      stream << "FALSE";
+      break;
+    case TOK_IDENTIFIER:
       stream << "IDENTIFIER";
       break;
-    case RETURN:
+    case TOK_RETURN:
       stream << "RETURN";
       break;
-    case BREAK:
+    case TOK_BREAK:
       stream << "BREAK";
       break;
-    case CONTINUE:
+    case TOK_CONTINUE:
       stream << "CONTINUE";
       break;
-    case IF:
+    case TOK_IF:
       stream << "IF";
       break;
-    case ELSE:
+    case TOK_ELSE:
       stream << "ELSE";
       break;
-    case FOR:
+    case TOK_FOR:
       stream << "FOR";
       break;
-    case WHILE:
+    case TOK_WHILE:
       stream << "WHILE";
       break;
-    case INVALID_CHAR:
+    case TOK_INVALID_CHAR:
       stream << "INVALID_CHAR";
       break;
-    case VOID:
+    case TOK_VOID:
       stream << "VOID";
       break;
-    case BOOL:
+    case TOK_BOOL:
       stream << "BOOL";
       break;
-    case INT:
+    case TOK_INT:
       stream << "INT";
       break;
-    case FLOAT:
+    case TOK_FLOAT:
       stream << "FLOAT";
       break;
-    case VEC2:
+    case TOK_VEC2:
       stream << "VEC2";
       break;
-    case VEC3:
+    case TOK_VEC3:
       stream << "VEC3";
       break;
-    case VEC4:
+    case TOK_VEC4:
       stream << "VEC4";
       break;
-    case VEC2I:
+    case TOK_VEC2I:
       stream << "VEC2I";
       break;
-    case VEC3I:
+    case TOK_VEC3I:
       stream << "VEC3I";
       break;
-    case VEC4I:
+    case TOK_VEC4I:
       stream << "VEC4I";
       break;
-    case MAT2:
+    case TOK_MAT2:
       stream << "MAT2";
       break;
-    case MAT3:
+    case TOK_MAT3:
       stream << "MAT3";
       break;
-    case MAT4:
+    case TOK_MAT4:
       stream << "MAT4";
       break;
-    case UNIFORM:
+    case TOK_UNIFORM:
       stream << "UNIFORM";
       break;
-    case VARYING:
+    case TOK_VARYING:
       stream << "VARYING";
       break;
   }
@@ -160,34 +169,39 @@ Lexer::Lexer()
 {
   auto& idMap = mIdentifierOverrideMap;
 
-  idMap["uniform"] = UNIFORM;
-  idMap["varying"] = VARYING;
+  idMap["true"] = TOK_TRUE;
+  idMap["false"] = TOK_FALSE;
+  idMap["pi"] = TOK_PI;
+  idMap["infinity"];
 
-  idMap["void"] = VOID;
-  idMap["bool"] = BOOL;
-  idMap["int"] = INT;
-  idMap["float"] = FLOAT;
+  idMap["uniform"] = TOK_UNIFORM;
+  idMap["varying"] = TOK_VARYING;
 
-  idMap["vec2"] = VEC2;
-  idMap["vec3"] = VEC3;
-  idMap["vec4"] = VEC4;
+  idMap["void"] = TOK_VOID;
+  idMap["bool"] = TOK_BOOL;
+  idMap["int"] = TOK_INT;
+  idMap["float"] = TOK_FLOAT;
 
-  idMap["vec2i"] = VEC2I;
-  idMap["vec3i"] = VEC3I;
-  idMap["vec4i"] = VEC4I;
+  idMap["vec2"] = TOK_VEC2;
+  idMap["vec3"] = TOK_VEC3;
+  idMap["vec4"] = TOK_VEC4;
 
-  idMap["mat2"] = MAT2;
-  idMap["mat3"] = MAT3;
-  idMap["mat4"] = MAT4;
+  idMap["vec2i"] = TOK_VEC2I;
+  idMap["vec3i"] = TOK_VEC3I;
+  idMap["vec4i"] = TOK_VEC4I;
 
-  idMap["break"] = BREAK;
-  idMap["continue"] = CONTINUE;
-  idMap["return"] = RETURN;
+  idMap["mat2"] = TOK_MAT2;
+  idMap["mat3"] = TOK_MAT3;
+  idMap["mat4"] = TOK_MAT4;
 
-  idMap["if"] = IF;
-  idMap["else"] = ELSE;
-  idMap["for"] = FOR;
-  idMap["while"] = WHILE;
+  idMap["break"] = TOK_BREAK;
+  idMap["continue"] = TOK_CONTINUE;
+  idMap["return"] = TOK_RETURN;
+
+  idMap["if"] = TOK_IF;
+  idMap["else"] = TOK_ELSE;
+  idMap["for"] = TOK_FOR;
+  idMap["while"] = TOK_WHILE;
 }
 
 std::optional<Token>
@@ -267,7 +281,7 @@ Lexer::ProduceIdentifier(size_t length)
 
   // definitely an identifier at this point.
 
-  return Token(IDENTIFIER, identifier, location);
+  return Token(TOK_IDENTIFIER, identifier, location);
 }
 
 Token
@@ -283,7 +297,7 @@ Lexer::ProduceInteger(size_t length)
 
   auto location = context.AdvanceAndProduceLocation(length);
 
-  return Token(INT_LITERAL, uint64_t(value), location);
+  return Token(TOK_INT_LITERAL, uint64_t(value), location);
 }
 
 Token
@@ -342,7 +356,7 @@ Lexer::ProduceFloat(size_t length)
 
   auto location = context.AdvanceAndProduceLocation(length);
 
-  return Token(FLOAT_LITERAL, value, location);
+  return Token(TOK_FLOAT_LITERAL, value, location);
 }
 
 Location
