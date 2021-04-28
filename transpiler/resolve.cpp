@@ -118,7 +118,7 @@ public:
     varRef.Resolve(var);
   }
 
-  void Mutate(type_constructor& typeConstructor) const override
+  void Mutate(TypeConstructor& typeConstructor) const override
   {
     typeConstructor.Recurse(*this);
   }

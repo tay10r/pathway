@@ -108,7 +108,7 @@ public:
     mSuccess = true;
   }
 
-  void Visit(const type_constructor&) override {}
+  void Visit(const TypeConstructor&) override {}
 
   void Visit(const MemberExpr& memberExpr) override
   {

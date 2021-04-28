@@ -69,7 +69,7 @@ public:
     }
   }
 
-  void Visit(const type_constructor& typeConstructor) override
+  void Visit(const TypeConstructor& typeConstructor) override
   {
     typeConstructor.Recurse(*this);
   }

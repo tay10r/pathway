@@ -17,8 +17,6 @@
 
 class VarDecl;
 
-struct type_constructor;
-
 class BoolLiteral;
 class BinaryExpr;
 class FloatLiteral;
@@ -26,8 +24,9 @@ class FuncCall;
 class GroupExpr;
 class MemberExpr;
 class IntLiteral;
-class VarRef;
+class TypeConstructor;
 class UnaryExpr;
+class VarRef;
 
 class ExprVisitor
 {
@@ -50,7 +49,7 @@ public:
 
   virtual void Visit(const VarRef&) = 0;
 
-  virtual void Visit(const type_constructor&) = 0;
+  virtual void Visit(const TypeConstructor&) = 0;
 
   virtual void Visit(const MemberExpr&) = 0;
 };
@@ -76,7 +75,7 @@ public:
 
   virtual void Mutate(VarRef&) const = 0;
 
-  virtual void Mutate(type_constructor&) const = 0;
+  virtual void Mutate(TypeConstructor&) const = 0;
 
   virtual void Mutate(MemberExpr&) const = 0;
 };
@@ -419,16 +418,13 @@ private:
   std::vector<const FuncDecl*> mResolvedFuncs;
 };
 
-struct type_constructor final : public Expr
+class TypeConstructor final : public Expr
 {
-  Type mType;
-
-  std::unique_ptr<ExprList> args;
-
-  type_constructor(Type type, ExprList* args_, const Location& loc)
+public:
+  TypeConstructor(Type type, ExprList* args, const Location& loc)
     : Expr(loc)
     , mType(type)
-    , args(args_)
+    , mArgs(args)
   {}
 
   void AcceptVisitor(ExprVisitor& v) const override { v.Visit(*this); }
@@ -438,19 +434,28 @@ struct type_constructor final : public Expr
     mutator.Mutate(*this);
   }
 
+  const ExprList& Args() const noexcept { return *mArgs; }
+
+  ExprList& Args() noexcept { return *mArgs; }
+
   Type GetType() const override { return mType; }
 
   void Recurse(const ExprMutator& mutator)
   {
-    for (auto& argExpr : *args)
+    for (auto& argExpr : *mArgs)
       argExpr->AcceptMutator(mutator);
   }
 
   void Recurse(ExprVisitor& Visitor) const
   {
-    for (const auto& argExpr : *args)
+    for (const auto& argExpr : *mArgs)
       argExpr->AcceptVisitor(Visitor);
   }
+
+private:
+  Type mType;
+
+  std::unique_ptr<ExprList> mArgs;
 };
 
 class Swizzle final

@@ -348,7 +348,7 @@ primary_expr: INT_LITERAL
             }
             | type_name '(' expr_list ')'
             {
-              $$ = new type_constructor($1, $3, @$);
+              $$ = new TypeConstructor($1, $3, @$);
             }
             | IDENTIFIER
             {

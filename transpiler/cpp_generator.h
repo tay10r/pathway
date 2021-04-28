@@ -81,15 +81,17 @@ private:
 
   void Visit(const BoolLiteral& e) override { this->os << e.Value(); }
 
-  void Visit(const type_constructor& type_ctor) override
+  void Visit(const TypeConstructor& typeCtor) override
   {
-    this->os << ToString(type_ctor.mType) << '(';
+    this->os << ToString(typeCtor.GetType()) << '(';
 
-    for (size_t i = 0; i < type_ctor.args->size(); i++) {
+    const auto& args = typeCtor.Args();
 
-      type_ctor.args->at(i)->AcceptVisitor(*this);
+    for (size_t i = 0; i < args.size(); i++) {
 
-      if ((i + 1) < type_ctor.args->size())
+      args.at(i)->AcceptVisitor(*this);
+
+      if ((i + 1) < args.size())
         this->os << ", ";
     }
 
