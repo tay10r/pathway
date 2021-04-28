@@ -143,6 +143,8 @@ options:
   --only-if-different   : The output file is only written if it's different from
                           the existing one. Does not have an effect when there
                           is no existing output file.
+
+  --syntax-only         : Only checks syntax, does not generate an output file.
 )";
 
 void
@@ -183,6 +185,8 @@ main(int argc, char** argv)
 
   bool onlyIfDifferent = false;
 
+  bool syntaxOnly = false;
+
   for (int i = 1; i < argc; i++) {
     if ((strcmp(argv[i], "--output") == 0) || (strcmp(argv[i], "-o") == 0)) {
       if ((i + 1) >= argc) {
@@ -194,6 +198,8 @@ main(int argc, char** argv)
       i++;
     } else if (strcmp(argv[i], "--only-if-different") == 0) {
       onlyIfDifferent = true;
+    } else if (strcmp(argv[i], "--syntax-only") == 0) {
+      syntaxOnly = true;
     } else if ((strcmp(argv[i], "--language") == 0) ||
                (strcmp(argv[i], "-l") == 0)) {
       if ((i + 1) >= argc) {
@@ -270,6 +276,10 @@ main(int argc, char** argv)
     for (const auto& dep : deps)
       std::cout << dep << std::endl;
 
+    return EXIT_SUCCESS;
+  }
+
+  if (syntaxOnly) {
     return EXIT_SUCCESS;
   }
 
