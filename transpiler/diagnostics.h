@@ -10,7 +10,8 @@
 
 enum class DiagID
 {
-  SyntaxError
+  SyntaxError,
+  UnresolvedFuncCall
 };
 
 enum class Severity
@@ -89,4 +90,33 @@ public:
   static auto GetClippedLocation(size_t line,
                                  std::string_view lineData,
                                  const Location&) noexcept -> ClippedLineRange;
+};
+
+class DiagErrorFilter final
+{
+public:
+  DiagErrorFilter(DiagObserver& diagObserver)
+    : mDiagObserver(diagObserver)
+  {}
+
+  bool ErrorFlag() const noexcept { return mErrorFlag; }
+
+  void EmitDiag(const Diag& diag)
+  {
+    switch (GetSeverity(diag.ID())) {
+      case Severity::Note:
+      case Severity::Warning:
+        break;
+      case Severity::Error:
+        mErrorFlag = true;
+        break;
+    }
+
+    mDiagObserver.Observe(diag);
+  }
+
+private:
+  DiagObserver& mDiagObserver;
+
+  bool mErrorFlag = false;
 };

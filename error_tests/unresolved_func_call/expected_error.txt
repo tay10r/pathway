@@ -1,0 +1,4 @@
+main.pt:2:10 to 2:12: error:
+ 2 |   return bar(a + 1);
+   |          ~~~
+   |          unable to find this function

@@ -4,6 +4,7 @@
 #include "parse.h"
 #include "program.h"
 #include "program_consumer.h"
+#include "resolution_check_pass.h"
 #include "resolve.h"
 #include "syntax_error_observer.h"
 
@@ -106,6 +107,13 @@ public:
 
     Resolve(*program);
 
+    ResolutionCheckPass resolutionCheckPass;
+
+    if (!resolutionCheckPass.Invoke(*program, *mDiagObserver)) {
+      this->error_flag = true;
+      return;
+    }
+
     if (!check(mPathStack.at(0), *program, std::cerr)) {
       this->error_flag = true;
       return;
@@ -176,6 +184,9 @@ ReadWholeFile(const char* path)
   return stream.str();
 }
 
+bool
+VerifyErrorTest(const std::string& error);
+
 } // namespace
 
 int
@@ -193,6 +204,8 @@ main(int argc, char** argv)
 
   bool syntaxOnly = false;
 
+  bool errorTest = false;
+
   for (int i = 1; i < argc; i++) {
     if ((strcmp(argv[i], "--output") == 0) || (strcmp(argv[i], "-o") == 0)) {
       if ((i + 1) >= argc) {
@@ -206,6 +219,8 @@ main(int argc, char** argv)
       onlyIfDifferent = true;
     } else if (strcmp(argv[i], "--syntax-only") == 0) {
       syntaxOnly = true;
+    } else if (strcmp(argv[i], "--error-test") == 0) {
+      errorTest = true;
     } else if ((strcmp(argv[i], "--language") == 0) ||
                (strcmp(argv[i], "-l") == 0)) {
       if ((i + 1) >= argc) {
@@ -265,7 +280,14 @@ main(int argc, char** argv)
   else
     main_path = "main.pt";
 
-  auto diagObserver = ConsoleDiagObserver::Make(std::cerr);
+  std::unique_ptr<ConsoleDiagObserver> diagObserver;
+
+  std::ostringstream errorTestStream;
+
+  if (errorTest)
+    diagObserver = ConsoleDiagObserver::Make(errorTestStream);
+  else
+    diagObserver = ConsoleDiagObserver::Make(std::cerr);
 
   Transpiler transpiler(
     argv[0], gen.release(), std::cout, diagObserver.release());
@@ -279,6 +301,10 @@ main(int argc, char** argv)
   transpiler.Parse();
 
   transpiler.EndFile();
+
+  if (errorTest) {
+    return VerifyErrorTest(errorTestStream.str()) ? EXIT_SUCCESS : EXIT_FAILURE;
+  }
 
   if (transpiler.get_error_flag())
     return EXIT_FAILURE;
@@ -324,3 +350,38 @@ main(int argc, char** argv)
 
   return EXIT_SUCCESS;
 }
+
+namespace {
+
+bool
+VerifyErrorTest(const std::string& error)
+{
+  auto expectedError = ReadWholeFile("expected_error.txt");
+
+  if (!expectedError) {
+    std::cerr << "failed to open 'expected_error.txt'" << std::endl;
+    return false;
+  }
+
+  if (error == *expectedError) {
+    return true;
+  }
+
+  std::cerr << "expected:" << std::endl;
+
+  std::cerr << std::endl;
+
+  std::cerr << *expectedError;
+
+  std::cerr << std::endl;
+
+  std::cerr << "actual:" << std::endl;
+
+  std::cerr << std::endl;
+
+  std::cerr << error;
+
+  return false;
+}
+
+} // namespace

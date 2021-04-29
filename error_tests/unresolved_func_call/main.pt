@@ -1,0 +1,3 @@
+vec3 foo(int a) {
+  return bar(a + 1);
+}

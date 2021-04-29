@@ -14,6 +14,8 @@ add_library(ptclib
   ${BISON_ptc_parse_OUTPUTS}
   abort.h
   abort.cpp
+  analysis_pass.h
+  analysis_pass.cpp
   check.h
   check.cpp
   cpp_expr_generator.h
@@ -39,6 +41,8 @@ add_library(ptclib
   program.cpp
   resolve.h
   resolve.cpp
+  resolution_check_pass.h
+  resolution_check_pass.cpp
   stmt.h
   stmt.cpp
   type.h

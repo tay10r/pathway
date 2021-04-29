@@ -425,6 +425,8 @@ public:
 
   bool Resolved() const { return mResolvedFuncs.size() == 1; }
 
+  Location GetNameLocation() const noexcept { return mName.GetLocation(); }
+
 private:
   DeclName mName;
   std::unique_ptr<ExprList> mArgs;
