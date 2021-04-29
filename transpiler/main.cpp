@@ -303,7 +303,17 @@ main(int argc, char** argv)
   transpiler.EndFile();
 
   if (errorTest) {
-    return VerifyErrorTest(errorTestStream.str()) ? EXIT_SUCCESS : EXIT_FAILURE;
+
+    auto errorTestSuccess = true;
+
+    if (transpiler.get_error_flag() != true) {
+      std::cerr << "failed to detect error" << std::endl;
+      errorTestSuccess = false;
+    }
+
+    errorTestSuccess &= VerifyErrorTest(errorTestStream.str());
+
+    return errorTestSuccess ? EXIT_SUCCESS : EXIT_FAILURE;
   }
 
   if (transpiler.get_error_flag())
