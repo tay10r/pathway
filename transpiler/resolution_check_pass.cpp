@@ -43,7 +43,18 @@ public:
 
   void Visit(const GroupExpr& groupExpr) override { groupExpr.Recurse(*this); }
 
-  void Visit(const VarRef& varRef) override { (void)varRef; }
+  void Visit(const VarRef& varRef) override
+  {
+    if (varRef.HasResolvedVar()) {
+      return;
+    }
+
+    auto loc = varRef.GetLocation();
+
+    Diag diag(loc, DiagID::UnresolvedVarRef, "unable to find this variable");
+
+    mErrorFilter.EmitDiag(diag);
+  }
 
   void Visit(const TypeConstructor& typeConstructor) override
   {

@@ -31,6 +31,7 @@ GetSeverity(DiagID diagID) noexcept
   switch (diagID) {
     case DiagID::SyntaxError:
     case DiagID::UnresolvedFuncCall:
+    case DiagID::UnresolvedVarRef:
       return Severity::Error;
   }
 

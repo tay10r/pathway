@@ -141,7 +141,11 @@ Token::Dump() const
     stream << ')';
   }
 
-  stream << ":(" << mLocation << ')';
+  stream << ":(";
+
+  mLocation.Dump(stream);
+
+  stream << ')';
 
   return stream.str();
 }

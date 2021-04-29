@@ -2,13 +2,19 @@
 
 #include <ostream>
 
+void
+Location::Dump(std::ostream& os) const
+{
+  os << first_line << ':' << first_column;
+
+  if ((first_line != last_line) || (first_column != last_column)) {
+    os << " to " << last_line << ':' << last_column;
+  }
+}
+
 std::ostream&
 operator<<(std::ostream& os, const Location& l)
 {
   os << l.first_line << ':' << l.first_column;
-
-  if ((l.last_line != l.first_line) || (l.last_column != l.first_column))
-    os << " to " << l.last_line << ':' << l.last_column;
-
   return os;
 }
