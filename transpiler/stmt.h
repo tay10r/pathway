@@ -108,9 +108,11 @@ class VarDecl;
 class DeclStmt final : public Stmt
 {
 public:
-  DeclStmt(VarDecl* v_)
-    : mVarDecl(v_)
-  {}
+  DeclStmt(VarDecl* v_);
+
+  DeclStmt(DeclStmt&&);
+
+  ~DeclStmt();
 
   VarDecl& GetVarDecl() noexcept { return *mVarDecl; }
 

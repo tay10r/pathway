@@ -1,5 +1,6 @@
 #pragma once
 
+#include "abort.h"
 #include "decl.h"
 
 #include <memory>
@@ -12,6 +13,8 @@ public:
 
   void AppendGlobalVar(VarDecl* globalVar);
 
+  bool HasMainModuleDecl() const noexcept { return !!mMainModuleDecl; }
+
   const auto& Funcs() const noexcept { return mFuncs; }
 
   const auto& GlobalVars() const noexcept { return mGlobalVars; }
@@ -20,7 +23,25 @@ public:
 
   const auto& VaryingGlobalVars() const noexcept { return mVaryingGlobalVars; }
 
+  const ModuleExportDecl& MainModuleDecl() const noexcept
+  {
+    if (!mMainModuleDecl) {
+      ABORT("Main module decl was accessed, but is null.");
+    }
+
+    return *mMainModuleDecl;
+  }
+
+  void SetMainModuleDecl(ModuleExportDecl* moduleDecl)
+  {
+    mMainModuleDecl.reset(moduleDecl);
+  }
+
+  std::string GetModuleName() const;
+
 private:
+  std::unique_ptr<ModuleExportDecl> mMainModuleDecl;
+
   std::vector<std::unique_ptr<FuncDecl>> mFuncs;
 
   std::vector<std::unique_ptr<VarDecl>> mGlobalVars;

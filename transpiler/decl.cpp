@@ -2,6 +2,30 @@
 
 #include <ostream>
 
+void
+ModuleName::Append(std::string* identifier, const Location& location)
+{
+  mIdentifiers.emplace_back(identifier);
+
+  mLocations.emplace_back(location);
+}
+
+std::string
+ModuleName::ToSingleIdentifier() const
+{
+  std::ostringstream stream;
+
+  for (size_t i = 0; i < mIdentifiers.size(); i++) {
+
+    stream << *mIdentifiers[i];
+
+    if ((i + 1) < mIdentifiers.size())
+      stream << "_";
+  }
+
+  return stream.str();
+}
+
 bool
 VarDecl::IsVaryingGlobal() const
 {

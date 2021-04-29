@@ -17,3 +17,14 @@ Program::AppendGlobalVar(VarDecl* globalVar)
       break;
   }
 }
+
+std::string
+Program::GetModuleName() const
+{
+  if (!HasMainModuleDecl())
+    return "untitled";
+
+  const auto& moduleDecl = MainModuleDecl();
+
+  return moduleDecl.GetModuleName().ToSingleIdentifier();
+}

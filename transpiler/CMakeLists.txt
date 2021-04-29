@@ -16,8 +16,13 @@ add_library(ptclib
   abort.cpp
   check.h
   check.cpp
+  cpp_expr_generator.h
   cpp_generator.h
   cpp_generator.cpp
+  cpp_generator_v2.h
+  cpp_generator_v2.cpp
+  cpp_stmt_generator.h
+  cpp_stmt_generator.cpp
   decl.h
   decl.cpp
   expr.h
@@ -32,6 +37,8 @@ add_library(ptclib
   program.cpp
   resolve.h
   resolve.cpp
+  stmt.h
+  stmt.cpp
   type.h
   type.cpp)
 

@@ -189,7 +189,7 @@ public:
 
   void Visit(const TypeConstructor& typeConstructor) override
   {
-    switch (typeConstructor.GetType().ID()) {
+    switch (typeConstructor.GetType().value().ID()) {
       case TypeID::Void:
         break;
       case TypeID::Int:

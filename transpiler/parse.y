@@ -95,6 +95,10 @@ class SyntaxErrorObserver;
 %token FOR "for"
 %token WHILE "while"
 
+%token MODULE "module"
+%token EXPORT "export"
+%token IMPORT "import"
+
 %token INVALID_CHAR "invalid character"
 
 %token VOID "void"
@@ -144,6 +148,10 @@ class SyntaxErrorObserver;
 
 %type <asFuncDecl> func
 
+%type <asModuleName> module_name
+
+%type <asModuleExportDecl> module_export_decl
+
 %type <asProgram> program
 
 %destructor { delete $$; } IDENTIFIER
@@ -165,6 +173,10 @@ class SyntaxErrorObserver;
 %destructor { delete $$; } var_decl
 
 %destructor { delete $$; } program
+
+%destructor { delete $$; } module_name
+
+%destructor { delete $$; } module_export_decl
 
 %%
 
@@ -194,7 +206,35 @@ program: func
          $$ = new Program();
          $$->AppendGlobalVar($1);
        }
+       | module_export_decl
+       {
+         $$ = new Program();
+         $$->SetMainModuleDecl($1);
+       }
+       | program module_export_decl
+       {
+         $$ = $1;
+         $$->SetMainModuleDecl($2);
+       }
        ;
+
+module_name: IDENTIFIER
+           {
+             $$ = new ModuleName();
+             $$->Append($1, @1);
+           }
+           | module_name '.' IDENTIFIER
+           {
+             $$ = $1;
+             $$->Append($3, @3);
+           }
+           ;
+
+module_export_decl: EXPORT MODULE module_name ';'
+                  {
+                    $$ = new ModuleExportDecl($3);
+                  }
+                  ;
 
 type_name: VOID  { $$ = TypeID::Void; }
          | BOOL  { $$ = TypeID::Bool; }

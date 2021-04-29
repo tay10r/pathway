@@ -1,5 +1,6 @@
 #pragma once
 
+#include "abort.h"
 #include "decl_name.h"
 #include "expr.h"
 #include "location.h"
@@ -9,6 +10,47 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+class ModuleName final
+{
+public:
+  void Append(std::string* identifier, const Location& location);
+
+  std::string ToSingleIdentifier() const;
+
+  auto Identifiers() const noexcept
+    -> const std::vector<std::unique_ptr<std::string>>&
+  {
+    return mIdentifiers;
+  }
+
+private:
+  std::vector<std::unique_ptr<std::string>> mIdentifiers;
+
+  std::vector<Location> mLocations;
+};
+
+class ModuleExportDecl final
+{
+public:
+  ModuleExportDecl(ModuleName* n)
+    : name(n)
+  {}
+
+  bool HasModuleName() const noexcept { return !!name; }
+
+  const ModuleName& GetModuleName() const noexcept
+  {
+    if (!name) {
+      ABORT("Module name was accessed, but is null.");
+    }
+
+    return *name;
+  }
+
+private:
+  std::unique_ptr<ModuleName> name;
+};
 
 using ParamList = std::vector<std::unique_ptr<VarDecl>>;
 
@@ -39,7 +81,7 @@ public:
     mBody->AcceptMutator(mutator);
   }
 
-  void AcceptBodyAccessor(StmtVisitor& visitor) const
+  void AcceptBodyVisitor(StmtVisitor& visitor) const
   {
     mBody->AcceptVisitor(visitor);
   }

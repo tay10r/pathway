@@ -12,6 +12,10 @@ union SemanticValue
 {
   Program* asProgram;
 
+  ModuleName* asModuleName;
+
+  ModuleExportDecl* asModuleExportDecl;
+
   VarDecl* asVarDecl;
 
   ParamList* asParamList;

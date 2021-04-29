@@ -489,7 +489,7 @@ CPPGenerator::GenerateFloatVectorSwizzle(const MemberExpr& e, size_t vecSize)
 void
 CPPGenerator::Visit(const MemberExpr& e)
 {
-  switch (e.BaseExpr().GetType().ID()) {
+  switch (e.BaseExpr().GetType().value().ID()) {
     case TypeID::Void:
     case TypeID::Bool:
     case TypeID::Int:

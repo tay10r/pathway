@@ -1,5 +1,7 @@
-#ifndef PATHWAY_COMMON_RUNTIME_H
-#define PATHWAY_COMMON_RUNTIME_H
+#pragma once
+
+#ifndef PATHWAY_COMMON_RUNTIME_H_INCLUDED
+#define PATHWAY_COMMON_RUNTIME_H_INCLUDED
 
 #include <utility>
 #include <vector>
@@ -525,4 +527,4 @@ private:
 
 // vim: foldmethod=marker
 
-#endif // PATHWAY_COMMON_RUNTIME_H
+#endif // PATHWAY_COMMON_RUNTIME_H_INCLUDED

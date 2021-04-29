@@ -24,6 +24,15 @@ Token::Dump() const
     case TOK_YYUNDEF:
       stream << "YYUNDEF";
       break;
+    case TOK_MODULE:
+      stream << "MODULE";
+      break;
+    case TOK_IMPORT:
+      stream << "IMPORT";
+      break;
+    case TOK_EXPORT:
+      stream << "EXPORT";
+      break;
     case TOK_INT_LITERAL:
       stream << "INT_LITERAL";
       break;
@@ -173,6 +182,10 @@ Lexer::Lexer()
   idMap["false"] = TOK_FALSE;
   idMap["pi"] = TOK_PI;
   idMap["infinity"];
+
+  idMap["module"] = TOK_MODULE;
+  idMap["import"] = TOK_IMPORT;
+  idMap["export"] = TOK_EXPORT;
 
   idMap["uniform"] = TOK_UNIFORM;
   idMap["varying"] = TOK_VARYING;

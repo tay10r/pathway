@@ -7,6 +7,7 @@
 #include "syntax_error_observer.h"
 
 #include "cpp_generator.h"
+#include "cpp_generator_v2.h"
 
 #include <fstream>
 #include <iostream>
@@ -177,7 +178,7 @@ main(int argc, char** argv)
 {
   std::string source_path;
 
-  std::string lang("c++");
+  std::string lang("cxx");
 
   std::string output_path;
 
@@ -239,8 +240,13 @@ main(int argc, char** argv)
 
   std::unique_ptr<Generator> gen;
 
-  if (lang == "c++") {
+  if (lang == "cxx")
+    lang = "cxx_v2";
+
+  if (lang == "cxx_v1") {
     gen.reset(new CPPGenerator(output_stream));
+  } else if (lang == "cxx_v2") {
+    gen.reset(new cpp::Generator(output_stream));
   } else {
     std::cerr << argv[0] << ": '" << lang << "' is not a supported language."
               << std::endl;

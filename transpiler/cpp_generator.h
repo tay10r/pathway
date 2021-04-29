@@ -83,7 +83,7 @@ private:
 
   void Visit(const TypeConstructor& typeCtor) override
   {
-    this->os << ToString(typeCtor.GetType()) << '(';
+    this->os << ToString(*typeCtor.GetType()) << '(';
 
     const auto& args = typeCtor.Args();
 
@@ -222,7 +222,7 @@ private:
 
       this->generate_header(*fn) << std::endl;
 
-      fn->AcceptBodyAccessor(*this);
+      fn->AcceptBodyVisitor(*this);
 
       this->Blank();
     }

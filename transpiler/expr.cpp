@@ -2,10 +2,11 @@
 
 #include "decl.h"
 
-Type
-VarRef::GetType() const
+auto
+VarRef::GetType() const -> std::optional<Type>
 {
-  assert(mResolvedVar);
+  if (!mResolvedVar)
+    return {};
 
   return mResolvedVar->GetType();
 }
@@ -92,10 +93,14 @@ get_int_vector_member_type(const std::string& pattern, size_t vecSize)
 
 } // namespace
 
-Type
-MemberExpr::GetType() const
+auto
+MemberExpr::GetType() const -> std::optional<Type>
 {
-  switch (mBaseExpr->GetType().ID()) {
+  auto baseType = mBaseExpr->GetType();
+  if (!baseType)
+    return {};
+
+  switch (baseType->ID()) {
     case TypeID::Void:
     case TypeID::Int:
     case TypeID::Float:
@@ -103,10 +108,7 @@ MemberExpr::GetType() const
     case TypeID::Mat2:
     case TypeID::Mat3:
     case TypeID::Mat4:
-      // These don't have members and this should not be reachable because it
-      // will trigger an error.
-      assert(false);
-      return mBaseExpr->GetType();
+      break;
     case TypeID::Vec2:
       return get_float_vector_member_type(mMemberName.Identifier(), 2);
     case TypeID::Vec3:
@@ -121,9 +123,7 @@ MemberExpr::GetType() const
       return get_int_vector_member_type(mMemberName.Identifier(), 4);
   }
 
-  assert(false);
-
-  return mBaseExpr->GetType();
+  return {};
 }
 
 namespace {
@@ -176,23 +176,32 @@ const std::array<CommonTypeInfo, 11> gCommonTypeTable{
 
 } // namespace
 
-Type
-BinaryExpr::GetType() const
+auto
+BinaryExpr::GetType() const -> std::optional<Type>
 {
-  if (mLeftExpr->GetType() == mRightExpr->GetType())
-    return mLeftExpr->GetType();
+  auto leftType = mLeftExpr->GetType();
+
+  auto rightType = mRightExpr->GetType();
+
+  if (!leftType || !rightType)
+    return {};
+
+  if (leftType == rightType)
+    return leftType;
 
   for (const auto& commonTypeEntry : gCommonTypeTable) {
-    if (commonTypeEntry.Match(mLeftExpr->GetType().ID(),
-                              mRightExpr->GetType().ID()))
+    if (commonTypeEntry.Match(leftType->ID(), rightType->ID()))
       return Type(commonTypeEntry.CommonType());
   }
 
-  assert(false);
+  return {};
 }
 
-Type
-FuncCall::GetType() const
+auto
+FuncCall::GetType() const -> std::optional<Type>
 {
-  return mResolvedFuncs.at(0)->ReturnType();
+  if (mResolvedFuncs.size() != 1)
+    return {};
+
+  return mResolvedFuncs[0]->ReturnType();
 }

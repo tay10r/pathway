@@ -93,7 +93,7 @@ public:
 
   virtual void AcceptVisitor(ExprVisitor& v) const = 0;
 
-  virtual Type GetType() const = 0;
+  virtual auto GetType() const -> std::optional<Type> = 0;
 
   Location GetLocation() const noexcept { return mLocation; }
 
@@ -120,7 +120,10 @@ public:
 
   void AcceptVisitor(ExprVisitor& v) const override { v.Visit(*this); }
 
-  Type GetType() const override { return Type(TypeID::Int); }
+  auto GetType() const -> std::optional<Type> override
+  {
+    return Type(TypeID::Int);
+  }
 
   uint64_t Value() const noexcept { return mValue; }
 
@@ -143,7 +146,10 @@ public:
     mutator.Mutate(*this);
   }
 
-  Type GetType() const override { return Type(TypeID::Bool); }
+  auto GetType() const -> std::optional<Type> override
+  {
+    return Type(TypeID::Bool);
+  }
 
   bool Value() const noexcept { return mValue; }
 
@@ -176,7 +182,10 @@ public:
 
   void AcceptVisitor(ExprVisitor& v) const override { v.Visit(*this); }
 
-  Type GetType() const override { return Type(TypeID::Float); }
+  auto GetType() const -> std::optional<Type> override
+  {
+    return Type(TypeID::Float);
+  }
 
   double Value() const noexcept { return mValue; }
 
@@ -216,7 +225,7 @@ public:
 
   void Resolve(const VarDecl* v) { mResolvedVar = v; }
 
-  Type GetType() const override;
+  auto GetType() const -> std::optional<Type> override;
 
 private:
   DeclName mName;
@@ -239,7 +248,10 @@ public:
     mutator.Mutate(*this);
   }
 
-  Type GetType() const override { return mInnerExpr->GetType(); }
+  auto GetType() const -> std::optional<Type> override
+  {
+    return mInnerExpr->GetType();
+  }
 
   void Recurse(const ExprMutator& mutator)
   {
@@ -294,7 +306,10 @@ public:
 
   Kind GetKind() const noexcept { return mKind; }
 
-  Type GetType() const override { return mBaseExpr->GetType(); }
+  auto GetType() const -> std::optional<Type> override
+  {
+    return mBaseExpr->GetType();
+  }
 
 private:
   UniqueExprPtr mBaseExpr;
@@ -342,7 +357,7 @@ public:
     mRightExpr->AcceptVisitor(Visitor);
   }
 
-  Type GetType() const override;
+  auto GetType() const -> std::optional<Type> override;
 
   const Expr& LeftExpr() const noexcept { return *mLeftExpr; }
 
@@ -389,7 +404,7 @@ public:
 
   const FuncDecl& GetFuncDecl() const { return *mResolvedFuncs.at(0); }
 
-  Type GetType() const override;
+  auto GetType() const -> std::optional<Type> override;
 
   void QueueNameMatches(std::vector<const FuncDecl*> matches)
   {
@@ -438,7 +453,7 @@ public:
 
   ExprList& Args() noexcept { return *mArgs; }
 
-  Type GetType() const override { return mType; }
+  auto GetType() const -> std::optional<Type> override { return mType; }
 
   void Recurse(const ExprMutator& mutator)
   {
@@ -495,7 +510,7 @@ public:
 
   const Expr& BaseExpr() const noexcept { return *mBaseExpr; }
 
-  Type GetType() const override;
+  auto GetType() const -> std::optional<Type> override;
 
   const DeclName& MemberName() const noexcept { return mMemberName; }
 

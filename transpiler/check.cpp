@@ -77,7 +77,7 @@ public:
     if (ret_value.GetType() != mExpectedReturnType) {
       this->ctx.emit_error(ret_value.GetLocation())
         << "expression should return type '" << mExpectedReturnType << "' not '"
-        << ret_value.GetType() << "'" << std::endl;
+        << *ret_value.GetType() << "'" << std::endl;
     }
   }
 
@@ -113,7 +113,7 @@ public:
   {
     ReturnStmtTypeChecker returnStmtTypeChecker(func.ReturnType(), this->ctx);
 
-    func.AcceptBodyAccessor(returnStmtTypeChecker);
+    func.AcceptBodyVisitor(returnStmtTypeChecker);
   }
 
   void CheckEntryPoints()
