@@ -24,6 +24,9 @@ Token::Dump() const
     case TOK_YYUNDEF:
       stream << "YYUNDEF";
       break;
+    case TOK_SCOPE_RESOLUTION_OPERATOR:
+      stream << "SCOPE_RESOLUTION_OPERATOR";
+      break;
     case TOK_MODULE:
       stream << "MODULE";
       break;
@@ -277,6 +280,11 @@ Lexer::Lex()
     }
 
     return ProduceInteger(length);
+  }
+
+  if ((first == ':') && (currentContext.Peek(1) == ':')) {
+    return Token(TOK_SCOPE_RESOLUTION_OPERATOR,
+                 currentContext.AdvanceAndProduceLocation(2));
   }
 
   return Token(first, currentContext.AdvanceAndProduceLocation(1));

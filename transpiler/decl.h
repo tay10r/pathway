@@ -11,6 +11,51 @@
 #include <string>
 #include <vector>
 
+class FuncDecl;
+class VarDecl;
+class ModuleExportDecl;
+class ModuleImportDecl;
+
+class DeclVisitor
+{
+public:
+  virtual ~DeclVisitor() = default;
+
+  virtual void Visit(const FuncDecl&) = 0;
+
+  /// @note Only applies to global variables.
+  virtual void Visit(const VarDecl&) = 0;
+
+  virtual void Visit(const ModuleExportDecl&) = 0;
+
+  virtual void Visit(const ModuleImportDecl&) = 0;
+};
+
+class DeclMutator
+{
+public:
+  virtual ~DeclMutator() = default;
+
+  virtual void Mutate(FuncDecl&) = 0;
+
+  /// @note Only applies to global variables.
+  virtual void Mutate(VarDecl&) = 0;
+
+  virtual void Mutate(ModuleExportDecl&) = 0;
+
+  virtual void Mutate(ModuleImportDecl&) = 0;
+};
+
+class Decl
+{
+public:
+  virtual ~Decl() = default;
+
+  virtual void AcceptVisitor(DeclVisitor&) const = 0;
+
+  virtual void AcceptMutator(DeclMutator&) = 0;
+};
+
 class ModuleName final
 {
 public:
@@ -30,31 +75,67 @@ private:
   std::vector<Location> mLocations;
 };
 
-class ModuleExportDecl final
+class ModuleExportDecl final : public Decl
 {
 public:
-  ModuleExportDecl(ModuleName* n)
-    : name(n)
+  ModuleExportDecl(ModuleName* name)
+    : mName(name)
   {}
 
-  bool HasModuleName() const noexcept { return !!name; }
+  void AcceptVisitor(DeclVisitor& visitor) const override
+  {
+    visitor.Visit(*this);
+  }
+
+  void AcceptMutator(DeclMutator& mutator) override { mutator.Mutate(*this); }
+
+  bool HasModuleName() const noexcept { return !!mName; }
 
   const ModuleName& GetModuleName() const noexcept
   {
-    if (!name) {
+    if (!mName) {
       ABORT("Module name was accessed, but is null.");
     }
 
-    return *name;
+    return *mName;
   }
 
 private:
-  std::unique_ptr<ModuleName> name;
+  std::unique_ptr<ModuleName> mName;
+};
+
+class ModuleImportDecl final : public Decl
+{
+public:
+  ModuleImportDecl(ModuleName* name)
+    : mName(name)
+  {}
+
+  void AcceptVisitor(DeclVisitor& visitor) const override
+  {
+    visitor.Visit(*this);
+  }
+
+  void AcceptMutator(DeclMutator& mutator) override { mutator.Mutate(*this); }
+
+  bool HasModuleName() const noexcept { return !!mName; }
+
+  const ModuleName& GetModuleName() const noexcept
+  {
+    if (!mName) {
+      ABORT("Module name was accessed, but is null.");
+    }
+
+    return *mName;
+  }
+
+private:
+  std::unique_ptr<ModuleName> mName;
 };
 
 using ParamList = std::vector<std::unique_ptr<VarDecl>>;
 
-class FuncDecl final
+class FuncDecl final : public Decl
 {
 public:
   FuncDecl(Type* returnType, DeclName&& name, ParamList* params, Stmt* body)
@@ -63,6 +144,13 @@ public:
     , mParamList(params)
     , mBody(body)
   {}
+
+  void AcceptVisitor(DeclVisitor& visitor) const override
+  {
+    visitor.Visit(*this);
+  }
+
+  void AcceptMutator(DeclMutator& mutator) override { mutator.Mutate(*this); }
 
   Location GetNameLocation() const noexcept { return mName.GetLocation(); }
 
@@ -108,7 +196,7 @@ private:
   std::unique_ptr<Stmt> mBody;
 };
 
-class VarDecl final
+class VarDecl final : public Decl
 {
 public:
   VarDecl(Type* type, DeclName&& name, Expr* initExpr)
@@ -116,6 +204,13 @@ public:
     , mName(std::move(name))
     , mInitExpr(initExpr)
   {}
+
+  void AcceptVisitor(DeclVisitor& visitor) const override
+  {
+    visitor.Visit(*this);
+  }
+
+  void AcceptMutator(DeclMutator& mutator) override { mutator.Mutate(*this); }
 
   const Type& GetType() const noexcept { return *mType; }
 

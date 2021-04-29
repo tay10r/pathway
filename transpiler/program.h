@@ -13,6 +13,11 @@ public:
 
   void AppendGlobalVar(VarDecl* globalVar);
 
+  void AppendModuleImportDecl(ModuleImportDecl* importDecl)
+  {
+    mModuleImports.emplace_back(importDecl);
+  }
+
   bool HasMainModuleDecl() const noexcept { return !!mMainModuleDecl; }
 
   const auto& Funcs() const noexcept { return mFuncs; }
@@ -45,6 +50,8 @@ private:
   std::vector<std::unique_ptr<FuncDecl>> mFuncs;
 
   std::vector<std::unique_ptr<VarDecl>> mGlobalVars;
+
+  std::vector<std::unique_ptr<ModuleImportDecl>> mModuleImports;
 
   std::vector<const VarDecl*> mVaryingGlobalVars;
 

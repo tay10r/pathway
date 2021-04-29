@@ -106,6 +106,8 @@ class SyntaxErrorObserver;
 %token EXPORT "export"
 %token IMPORT "import"
 
+%token SCOPE_RESOLUTION_OPERATOR "::"
+
 %token INVALID_CHAR "invalid character"
 
 %token VOID "void"
@@ -159,6 +161,8 @@ class SyntaxErrorObserver;
 
 %type <asModuleExportDecl> module_export_decl
 
+%type <asModuleImportDecl> module_import_decl
+
 %type <asProgram> program
 
 %destructor { delete $$; } IDENTIFIER
@@ -184,6 +188,8 @@ class SyntaxErrorObserver;
 %destructor { delete $$; } module_name
 
 %destructor { delete $$; } module_export_decl
+
+%destructor { delete $$; } module_import_decl
 
 %%
 
@@ -223,6 +229,16 @@ program: func
          $$ = $1;
          $$->SetMainModuleDecl($2);
        }
+       | module_import_decl
+       {
+         $$ = new Program();
+         $$->AppendModuleImportDecl($1);
+       }
+       | program module_import_decl
+       {
+         $$ = $1;
+         $$->AppendModuleImportDecl($2);
+       }
        ;
 
 module_name: IDENTIFIER
@@ -230,12 +246,17 @@ module_name: IDENTIFIER
              $$ = new ModuleName();
              $$->Append($1, @1);
            }
-           | module_name '.' IDENTIFIER
+           | module_name SCOPE_RESOLUTION_OPERATOR IDENTIFIER
            {
              $$ = $1;
              $$->Append($3, @3);
            }
            ;
+
+module_import_decl: IMPORT MODULE module_name ';'
+                  {
+                    $$ = new ModuleImportDecl($3);
+                  }
 
 module_export_decl: EXPORT MODULE module_name ';'
                   {

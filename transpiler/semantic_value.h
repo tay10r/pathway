@@ -14,6 +14,8 @@ union SemanticValue
 
   ModuleName* asModuleName;
 
+  ModuleImportDecl* asModuleImportDecl;
+
   ModuleExportDecl* asModuleExportDecl;
 
   VarDecl* asVarDecl;
