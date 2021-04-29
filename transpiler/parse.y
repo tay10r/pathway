@@ -12,9 +12,16 @@ void yyerror(const Location* location,
              Lexer&,
              ProgramConsumer&,
              SyntaxErrorObserver& syntaxErrorObserver,
-             const char* errorMessage)
+             const char* originalErrorMessage)
 {
-  syntaxErrorObserver.ObserveSyntaxError(*location, errorMessage);
+  std::string errorMessage(originalErrorMessage);
+
+  size_t prefix = sizeof("syntax error, ") - 1;
+
+  if (errorMessage.substr(0, prefix) == "syntax error, ")
+    errorMessage = errorMessage.substr(prefix);
+
+  syntaxErrorObserver.ObserveSyntaxError(*location, errorMessage.c_str());
 }
 
 int yylex(SemanticValue* value, Location* location, Lexer& lexer)

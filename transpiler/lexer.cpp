@@ -278,6 +278,15 @@ Lexer::Lex()
   return Token(first, currentContext.AdvanceAndProduceLocation(1));
 }
 
+std::string_view
+Lexer::GetCurrentFileData() const noexcept
+{
+  if (mFileContextStack.empty())
+    return std::string_view();
+
+  return mFileContextStack.back().Data();
+}
+
 Token
 Lexer::ProduceIdentifier(size_t length)
 {

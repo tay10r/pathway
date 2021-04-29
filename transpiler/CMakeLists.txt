@@ -23,6 +23,8 @@ add_library(ptclib
   cpp_generator_v2.cpp
   cpp_stmt_generator.h
   cpp_stmt_generator.cpp
+  diagnostics.h
+  diagnostics.cpp
   decl.h
   decl.cpp
   expr.h

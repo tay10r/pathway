@@ -65,6 +65,8 @@ public:
 
   void PopFile();
 
+  std::string_view GetCurrentFileData() const noexcept;
+
 private:
   Token ProduceIdentifier(size_t length);
 
@@ -109,6 +111,8 @@ private:
     {
       return (mCurrentIndex < mData.size()) ? mData.size() - mCurrentIndex : 0;
     }
+
+    std::string_view Data() const noexcept { return mData; }
 
   private:
     std::string mPath;

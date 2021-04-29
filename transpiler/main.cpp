@@ -1,4 +1,5 @@
 #include "check.h"
+#include "diagnostics.h"
 #include "lexer.h"
 #include "parse.h"
 #include "program.h"
@@ -49,32 +50,34 @@ struct FileContext final
   bool good() const noexcept { return !!this->file; }
 };
 
-class ParserAdapter final
+class Transpiler final
   : public ProgramConsumer
   , public SyntaxErrorObserver
 {
 public:
-  ParserAdapter(const char* program_name_,
-                Generator* gen_,
-                std::ostream& os_,
-                std::ostream& es_ = std::cerr)
+  Transpiler(const char* program_name_,
+             Generator* gen_,
+             std::ostream& os_,
+             DiagObserver* diagObserver)
     : program_name(program_name_)
     , gen(gen_)
     , os(os_)
-    , es(es_)
+    , mDiagObserver(diagObserver)
   {}
 
   bool BeginFile(const char* path)
   {
     if (!mLexer.PushFile(path)) {
-      this->es << this->program_name << ": failed to open '" << path << "' ("
-               << strerror(errno) << ')' << std::endl;
+      std::cerr << this->program_name << ": failed to open '" << path << "' ("
+                << strerror(errno) << ')' << std::endl;
       return false;
     }
 
     mPathStack.emplace_back(path);
 
     mDependencies.emplace(path);
+
+    mDiagObserver->BeginFile(path, mLexer.GetCurrentFileData());
 
     return true;
   }
@@ -86,6 +89,8 @@ public:
     mPathStack.pop_back();
 
     mLexer.PopFile();
+
+    mDiagObserver->EndFile();
   }
 
   bool Parse() { return ::Parse(mLexer, *this, *this); }
@@ -101,7 +106,7 @@ public:
 
     Resolve(*program);
 
-    if (!check(mPathStack.at(0), *program, this->es)) {
+    if (!check(mPathStack.at(0), *program, std::cerr)) {
       this->error_flag = true;
       return;
     }
@@ -114,9 +119,9 @@ public:
   {
     this->error_flag = true;
 
-    this->es << mPathStack.at(0) << ':';
+    Diag diag(loc, DiagID::SyntaxError, msg);
 
-    this->es << loc << ": " << msg << std::endl;
+    mDiagObserver->Observe(diag);
   }
 
   void DisableCodeGen() { mCodeGenEnabled = false; }
@@ -127,7 +132,7 @@ private:
   Lexer mLexer;
   std::unique_ptr<Generator> gen;
   std::ostream& os;
-  std::ostream& es;
+  std::unique_ptr<DiagObserver> mDiagObserver;
   std::set<std::string> mDependencies;
   bool error_flag = false;
   bool mCodeGenEnabled = true;
@@ -260,24 +265,27 @@ main(int argc, char** argv)
   else
     main_path = "main.pt";
 
-  ParserAdapter adapter(argv[0], gen.release(), std::cout);
+  auto diagObserver = ConsoleDiagObserver::Make(std::cerr);
+
+  Transpiler transpiler(
+    argv[0], gen.release(), std::cout, diagObserver.release());
 
   if (listDependencies)
-    adapter.DisableCodeGen();
+    transpiler.DisableCodeGen();
 
-  if (!adapter.BeginFile(main_path.c_str()))
+  if (!transpiler.BeginFile(main_path.c_str()))
     return EXIT_FAILURE;
 
-  adapter.Parse();
+  transpiler.Parse();
 
-  adapter.EndFile();
+  transpiler.EndFile();
 
-  if (adapter.get_error_flag())
+  if (transpiler.get_error_flag())
     return EXIT_FAILURE;
 
   if (listDependencies) {
 
-    auto deps = adapter.Dependencies();
+    auto deps = transpiler.Dependencies();
 
     for (const auto& dep : deps)
       std::cout << dep << std::endl;

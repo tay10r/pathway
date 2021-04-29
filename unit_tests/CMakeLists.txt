@@ -9,6 +9,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(ptc_unit_tests
   runtime.cpp
+  diagnostics.cpp
   cpp_expr_generation.cpp
   string_to_expr.h
   string_to_expr.cpp
