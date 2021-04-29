@@ -4,6 +4,50 @@
 
 using namespace pathway;
 
+TEST(Runtime, VectorAddScalar)
+{
+  auto a = vector_constructor<3>::make(1, 2, 3);
+
+  auto b = a + 5;
+
+  EXPECT_EQ(b.at<0>(), 6);
+  EXPECT_EQ(b.at<1>(), 7);
+  EXPECT_EQ(b.at<2>(), 8);
+}
+
+TEST(Runtime, VectorSubScalar)
+{
+  auto a = vector_constructor<3>::make(1, 2, 3);
+
+  auto b = a - 5;
+
+  EXPECT_EQ(b.at<0>(), -4);
+  EXPECT_EQ(b.at<1>(), -3);
+  EXPECT_EQ(b.at<2>(), -2);
+}
+
+TEST(Runtime, VectorMulScalar)
+{
+  auto a = vector_constructor<3>::make(1, 2, 3);
+
+  auto b = a * 5;
+
+  EXPECT_EQ(b.at<0>(), 5);
+  EXPECT_EQ(b.at<1>(), 10);
+  EXPECT_EQ(b.at<2>(), 15);
+}
+
+TEST(Runtime, VectorDivScalar)
+{
+  auto a = vector_constructor<3>::make(5, 10, 15);
+
+  auto b = a / 5;
+
+  EXPECT_EQ(b.at<0>(), 1);
+  EXPECT_EQ(b.at<1>(), 2);
+  EXPECT_EQ(b.at<2>(), 3);
+}
+
 TEST(Runtime, VectorConstructorWithVectorArguments)
 {
   auto a = vector_constructor<2>::make(2, 3);

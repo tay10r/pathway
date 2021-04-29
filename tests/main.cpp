@@ -1,4 +1,4 @@
-#define PT_IMPLEMENTATION
+#include <pathway.h>
 
 #include HEADER
 
@@ -96,15 +96,19 @@ GetDifference()
 int
 main()
 {
-  pt::Frame frame;
+  using uniform_data = example::uniform_data<float, int>;
 
-  frame.Resize(width, height);
+  using varying_data = example::varying_data<float, int>;
 
-  frame.Sample();
+  pathway::frame<uniform_data, varying_data, float> frame;
+
+  frame.resize(width, height);
+
+  frame.sample_pixels();
 
   std::vector<unsigned char> rgbBuffer(width * height * 3);
 
-  frame.EncodeRGB(rgbBuffer.data());
+  frame.encode_rgb(rgbBuffer.data());
 
   stbi_write_png(
     TEST_IMAGE_PATH, width, height, 3, rgbBuffer.data(), width * 3);

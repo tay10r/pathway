@@ -209,34 +209,34 @@ public:
         break;
       case TypeID::Vec2:
       case TypeID::Vec2i:
-        mStream << "vector_constructor<2>(";
+        mStream << "vector_constructor<2>::make(";
         EncodeExprList(typeConstructor.Args());
         mStream << ")";
         break;
       case TypeID::Vec3:
       case TypeID::Vec3i:
-        mStream << "vector_constructor<3>(";
+        mStream << "vector_constructor<3>::make(";
         EncodeExprList(typeConstructor.Args());
         mStream << ")";
         break;
       case TypeID::Vec4:
       case TypeID::Vec4i:
-        mStream << "vector_constructor<4>(";
+        mStream << "vector_constructor<4>::make(";
         EncodeExprList(typeConstructor.Args());
         mStream << ")";
         break;
       case TypeID::Mat2:
-        mStream << "matrix_constructor<2, 2>(";
+        mStream << "matrix_constructor<2, 2>::make(";
         EncodeExprList(typeConstructor.Args());
         mStream << ")";
         break;
       case TypeID::Mat3:
-        mStream << "matrix_constructor<3, 3>(";
+        mStream << "matrix_constructor<3, 3>::make(";
         EncodeExprList(typeConstructor.Args());
         mStream << ")";
         break;
       case TypeID::Mat4:
-        mStream << "matrix_constructor<4, 4>(";
+        mStream << "matrix_constructor<4, 4>::make(";
         EncodeExprList(typeConstructor.Args());
         mStream << ")";
         break;

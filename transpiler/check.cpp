@@ -166,17 +166,21 @@ public:
         << "return type should be type 'void'" << std::endl;
     }
 
-    if (fn.GetParamList().size() != 1) {
+    if (fn.GetParamList().size() != 2) {
       this->ctx.emit_error(fn.GetNameLocation())
-        << "there should only be one parameter to this function." << std::endl;
-    }
-
-    if (fn.GetParamList().size() < 1)
+        << "there should be two 'vec2' parameters to this function."
+        << std::endl;
       return;
+    }
 
     if (fn.GetParamList().at(0)->GetTypeID() != TypeID::Vec2) {
       this->ctx.emit_error(fn.GetNameLocation())
-        << "parameter should be type 'vec2'" << std::endl;
+        << "1st parameter should be type 'vec2'" << std::endl;
+    }
+
+    if (fn.GetParamList().at(1)->GetTypeID() != TypeID::Vec2) {
+      this->ctx.emit_error(fn.GetNameLocation())
+        << "2nd parameter should be type 'vec2'" << std::endl;
     }
   }
 

@@ -18,11 +18,13 @@ foreach(test ${tests})
   set(test_image_path "${PROJECT_BINARY_DIR}/images/${test}.png")
 
   add_custom_target(ptc_${test}_cpp_source ALL
-    COMMAND $<TARGET_FILE:ptc> -o ${cpp_source} ${test} --only-if-different -l cxx_v1
+    COMMAND $<TARGET_FILE:ptc> -o ${cpp_source} ${test} --only-if-different
     COMMENT "Generating C++ source for ${test}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
   add_executable(ptc_${test} main.cpp)
+
+  target_link_libraries(ptc_${test} PRIVATE pathway_runtime)
 
   target_compile_definitions(ptc_${test}
     PRIVATE

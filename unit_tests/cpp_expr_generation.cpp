@@ -72,7 +72,7 @@ TEST(CppExpr, TypeConstructor)
   auto out = RunTest(env, "vec4(1.0, a.xz, b.y)");
 
   EXPECT_EQ(out,
-            "vector_constructor<4>(float_type(1), swizzle<0, 2>::get(a), "
+            "vector_constructor<4>::make(float_type(1), swizzle<0, 2>::get(a), "
             "swizzle<1>::get(b))");
 }
 

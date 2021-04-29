@@ -13,9 +13,14 @@ namespace pathway {
 // {{{ Generic Operations
 //=======================
 
+template<typename scalar, size_t>
+class vector;
+
 template<size_t count, size_t index = 0>
 struct binary_op final
 {
+  // vector & vector and matrix & matrix operations
+
   template<typename operand>
   static void add(const operand& a, const operand& b, operand& out) noexcept
   {
@@ -30,6 +35,48 @@ struct binary_op final
     out.template at<index>() = a.template at<index>() - b.template at<index>();
 
     binary_op<count, index + 1>::sub(a, b, out);
+  }
+
+  // vector & scalar operations
+
+  template<typename scalar, size_t vector_size>
+  static void add(const vector<scalar, vector_size>& a,
+                  scalar b,
+                  vector<scalar, vector_size>& out) noexcept
+  {
+    out.template at<index>() = a.template at<index>() + b;
+
+    binary_op<count, index + 1>::add(a, b, out);
+  }
+
+  template<typename scalar, size_t vector_size>
+  static void sub(const vector<scalar, vector_size>& a,
+                  scalar b,
+                  vector<scalar, vector_size>& out) noexcept
+  {
+    out.template at<index>() = a.template at<index>() - b;
+
+    binary_op<count, index + 1>::sub(a, b, out);
+  }
+
+  template<typename scalar, size_t vector_size>
+  static void mul(const vector<scalar, vector_size>& a,
+                  scalar b,
+                  vector<scalar, vector_size>& out) noexcept
+  {
+    out.template at<index>() = a.template at<index>() * b;
+
+    binary_op<count, index + 1>::mul(a, b, out);
+  }
+
+  template<typename scalar, size_t vector_size>
+  static void div(const vector<scalar, vector_size>& a,
+                  scalar b,
+                  vector<scalar, vector_size>& out) noexcept
+  {
+    out.template at<index>() = a.template at<index>() / b;
+
+    binary_op<count, index + 1>::div(a, b, out);
   }
 
 #if 0
@@ -49,6 +96,30 @@ struct binary_op<index, index> final
 
   template<typename operand>
   static void sub(const operand&, const operand&, operand&) noexcept
+  {}
+
+  template<typename scalar, size_t vector_size>
+  static void add(const vector<scalar, vector_size>&,
+                  scalar,
+                  vector<scalar, vector_size>&) noexcept
+  {}
+
+  template<typename scalar, size_t vector_size>
+  static void sub(const vector<scalar, vector_size>&,
+                  scalar,
+                  vector<scalar, vector_size>&) noexcept
+  {}
+
+  template<typename scalar, size_t vector_size>
+  static void mul(const vector<scalar, vector_size>&,
+                  scalar,
+                  vector<scalar, vector_size>&) noexcept
+  {}
+
+  template<typename scalar, size_t vector_size>
+  static void div(const vector<scalar, vector_size>&,
+                  scalar,
+                  vector<scalar, vector_size>&) noexcept
   {}
 };
 
@@ -168,6 +239,86 @@ operator-(const vector<scalar, size>& a, const vector<scalar, size>& b) noexcept
   binary_op<size>::sub(a, b, out);
 
   return out;
+}
+
+template<typename scalar, size_t size>
+auto
+operator+(const vector<scalar, size>& a, scalar b) noexcept
+  -> vector<scalar, size>
+{
+  vector<scalar, size> out;
+
+  binary_op<size>::add(a, b, out);
+
+  return out;
+}
+
+template<typename scalar, size_t size>
+auto
+operator-(const vector<scalar, size>& a, scalar b) noexcept
+  -> vector<scalar, size>
+{
+  vector<scalar, size> out;
+
+  binary_op<size>::sub(a, b, out);
+
+  return out;
+}
+
+template<typename scalar, size_t size>
+auto
+operator*(const vector<scalar, size>& a, scalar b) noexcept
+  -> vector<scalar, size>
+{
+  vector<scalar, size> out;
+
+  binary_op<size>::mul(a, b, out);
+
+  return out;
+}
+
+template<typename scalar, size_t size>
+auto
+operator/(const vector<scalar, size>& a, scalar b) noexcept
+  -> vector<scalar, size>
+{
+  vector<scalar, size> out;
+
+  binary_op<size>::div(a, b, out);
+
+  return out;
+}
+
+template<typename scalar, size_t size>
+auto
+operator+(scalar a, const vector<scalar, size>& b) noexcept
+  -> vector<scalar, size>
+{
+  return b + a;
+}
+
+template<typename scalar, size_t size>
+auto
+operator-(scalar a, const vector<scalar, size>& b) noexcept
+  -> vector<scalar, size>
+{
+  return b - a;
+}
+
+template<typename scalar, size_t size>
+auto
+operator*(scalar a, const vector<scalar, size>& b) noexcept
+  -> vector<scalar, size>
+{
+  return b * a;
+}
+
+template<typename scalar, size_t size>
+auto
+operator/(scalar a, const vector<scalar, size>& b) noexcept
+  -> vector<scalar, size>
+{
+  return b / a;
 }
 
 // {{{ Constructor
@@ -320,6 +471,16 @@ struct swizzle final
     swizzle_initializer<0, indices...>::init(v, out);
 
     return out;
+  }
+};
+
+template<size_t single_index>
+struct swizzle<single_index> final
+{
+  template<typename scalar, size_t vec_size>
+  static auto get(const vector<scalar, vec_size>& v) noexcept -> scalar
+  {
+    return v.template at<single_index>();
   }
 };
 

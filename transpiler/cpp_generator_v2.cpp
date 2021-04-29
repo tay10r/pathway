@@ -1,5 +1,7 @@
 #include "cpp_generator_v2.h"
 
+#include "cpp_expr_environment_impl.h"
+#include "cpp_expr_generator.h"
 #include "cpp_stmt_generator.h"
 
 namespace cpp {
@@ -110,6 +112,10 @@ Generator::GenerateTypeAliases()
 void
 Generator::GenerateInnerNamespaceDecls(const Program& program)
 {
+  Indent() << "using namespace pathway;" << std::endl;
+
+  Blank();
+
   GenerateUniformData(program);
 
   Blank();
@@ -145,8 +151,14 @@ Generator::GenerateUniformData(const Program& program)
     Indent() << typePrinter.String() << ' ' << var->Identifier();
 
     if (var->HasInitExpr()) {
-      // TODO
-      ;
+
+      ExprEnvironmentImpl exprEnv(program);
+
+      ExprGenerator exprGenerator(exprEnv);
+
+      var->InitExpr().AcceptVisitor(exprGenerator);
+
+      os << " = " << exprGenerator.String();
     }
 
     os << ';' << std::endl;
@@ -196,8 +208,8 @@ Generator::GenerateVaryingData(const Program& program)
     Blank();
 
     if (func->IsPixelSampler()) {
-      Indent() << "auto operator()(const uniform_data_type& frame, vec2 uv) "
-                  "noexcept -> void;"
+      Indent() << "auto operator()(const uniform_data_type& frame, vec2 "
+                  "uv_min, vec2 uv_max) noexcept -> void;"
                << std::endl;
       continue;
     } else if (func->IsPixelEncoder()) {
@@ -231,9 +243,9 @@ Generator::GenerateParamList(const Program& program, const FuncDecl& funcDecl)
   std::vector<std::string> paramStrings;
 
   if (funcDecl.ReferencesFrameState())
-    paramStrings.emplace_back("const uniform_data& frame");
+    paramStrings.emplace_back("const uniform_data_type& frame");
   else if (funcDecl.IsEntryPoint())
-    paramStrings.emplace_back("const uniform_data&");
+    paramStrings.emplace_back("const uniform_data_type&");
 
   for (const auto& param : funcDecl.GetParamList()) {
 
@@ -272,12 +284,20 @@ Generator::GenerateFuncDefs(const Program& program)
     Indent() << "template <typename float_type, typename int_type>"
              << std::endl;
 
-    Indent() << "auto varying_data::";
+    Indent() << "auto varying_data<float_type, int_type>::";
 
     if (func->IsPixelSampler()) {
-      os << "operator()(vec2 uv) noexcept -> ";
+      if (func->ReferencesFrameState())
+        os << "operator()(const uniform_data_type& frame, vec2 uv_min, vec2 "
+              "uv_max) noexcept -> ";
+      else
+        os << "operator()(const uniform_data_type&, vec2 uv_min, vec2 uv_max) "
+              "noexcept -> ";
     } else if (func->IsPixelEncoder()) {
-      os << "operator()() const noexcept -> ";
+      if (func->ReferencesFrameState())
+        os << "operator()(const uniform_data_type& frame) const noexcept -> ";
+      else
+        os << "operator()(const uniform_data_type&) const noexcept -> ";
     } else {
       os << func->Identifier();
       GenerateParamList(program, *func);

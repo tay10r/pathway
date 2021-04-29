@@ -189,11 +189,11 @@ FuncDecl::IsEntryPoint() const
 bool
 FuncDecl::IsPixelSampler() const
 {
-  return this->mName.Identifier() == "SamplePixel";
+  return this->mName.Identifier() == "sample_pixel";
 }
 
 bool
 FuncDecl::IsPixelEncoder() const
 {
-  return this->mName.Identifier() == "EncodePixel";
+  return this->mName.Identifier() == "encode_pixel";
 }

@@ -16,8 +16,13 @@ public:
   auto GetGlobalsUsageImpl(const FuncCall& funcCall) const
     -> std::optional<GlobalsUsage>
   {
-    (void)funcCall;
-    return {};
+    if (!funcCall.Resolved())
+      return {};
+
+    const auto& funcDecl = funcCall.GetFuncDecl();
+
+    return GlobalsUsage{ funcDecl.ReferencesFrameState(),
+                         funcDecl.ReferencesPixelState() };
   }
 
   auto GetVarOriginImpl(const VarRef& varRef) const -> std::optional<VarOrigin>

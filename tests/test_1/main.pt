@@ -1,13 +1,11 @@
+export module example;
+
 vec3 color;
 
-void
-SamplePixel(vec2 uv)
-{
-  color = vec3(uv.xy, 1.0);
+void sample_pixel(vec2 uv_min, vec2 uv_max) {
+  color = vec3((uv_min + uv_max) * 0.5, 1.0);
 }
 
-vec4
-EncodePixel()
-{
+vec4 encode_pixel() {
   return vec4(color.xyz, 1.0);
 }
