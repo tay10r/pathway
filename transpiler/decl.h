@@ -162,6 +162,8 @@ public:
 
   Location GetNameLocation() const noexcept { return mName.GetLocation(); }
 
+  std::string GetMangledName() const;
+
   bool HasName(const std::string& name) const { return Identifier() == name; }
 
   const Type& ReturnType() const noexcept { return *mReturnType; }
@@ -226,6 +228,8 @@ public:
   {
     return mType->GetVariability();
   }
+
+  Location GetNameLocation() const noexcept { return mName.GetLocation(); }
 
   TypeID GetTypeID() const noexcept { return mType->ID(); }
 

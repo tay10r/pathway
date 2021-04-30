@@ -32,7 +32,10 @@ GetSeverity(DiagID diagID) noexcept
     case DiagID::SyntaxError:
     case DiagID::UnresolvedFuncCall:
     case DiagID::UnresolvedVarRef:
+    case DiagID::DuplicateDecl:
       return Severity::Error;
+    case DiagID::OriginalDecl:
+      return Severity::Note;
   }
 
   return Severity::Error;
@@ -108,9 +111,11 @@ public:
 
     ResetAttribs();
 
-    BeginBoldRed();
+    auto severity = GetSeverity(diag.ID());
 
-    mStream << ToStringView(GetSeverity(diag.ID())) << ':';
+    BeginSeverityColor(severity);
+
+    mStream << ToStringView(severity) << ':';
 
     ResetAttribs();
 
@@ -128,7 +133,7 @@ public:
 
       mStream << lineView.substr(0, clippedLoc.index);
 
-      BeginBoldRed();
+      BeginSeverityColor(severity);
 
       mStream << lineView.substr(clippedLoc.index, clippedLoc.length);
 
@@ -140,7 +145,7 @@ public:
 
       mStream << ' ' << AsSpace(line) << " | " << indent;
 
-      BeginBoldRed();
+      BeginSeverityColor(severity);
 
       for (size_t i = 0; i < clippedLoc.length; i++) {
         mStream << '~';
@@ -161,10 +166,36 @@ public:
   void SetColorEnabled(bool enabled) override { mColorEnabled = enabled; }
 
 private:
+  void BeginSeverityColor(Severity severity)
+  {
+    switch (severity) {
+      case Severity::Note:
+        BeginBoldCyan();
+        break;
+      case Severity::Warning:
+        BeginBoldMagenta();
+        break;
+      case Severity::Error:
+        BeginBoldRed();
+        break;
+    }
+  }
   void BeginBoldRed()
   {
     if (mColorEnabled)
       mStream << "\x1b[1;31m";
+  }
+
+  void BeginBoldMagenta()
+  {
+    if (mColorEnabled)
+      mStream << "\x1b[1;35m";
+  }
+
+  void BeginBoldCyan()
+  {
+    if (mColorEnabled)
+      mStream << "\x1b[1;36m";
   }
 
   void BeginBoldWhite()

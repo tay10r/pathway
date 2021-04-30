@@ -9,6 +9,8 @@
 class Module final
 {
 public:
+  void AcceptDeclVisitor(DeclVisitor& v) const;
+
   void AppendFunc(FuncDecl* f);
 
   void AppendGlobalVar(VarDecl* globalVar);

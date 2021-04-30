@@ -12,7 +12,9 @@ enum class DiagID
 {
   SyntaxError,
   UnresolvedFuncCall,
-  UnresolvedVarRef
+  UnresolvedVarRef,
+  DuplicateDecl,
+  OriginalDecl
 };
 
 enum class Severity

@@ -1,6 +1,14 @@
 #include "module.h"
 
 void
+Module::AcceptDeclVisitor(DeclVisitor& visitor) const
+{
+  for (const auto* decl : mDeclList) {
+    decl->AcceptVisitor(visitor);
+  }
+}
+
+void
 Module::AppendFunc(FuncDecl* f)
 {
   mFuncs.emplace_back(f);

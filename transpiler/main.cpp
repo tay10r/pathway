@@ -4,9 +4,11 @@
 #include "module.h"
 #include "module_consumer.h"
 #include "parse.h"
-#include "resolution_check_pass.h"
 #include "resolve.h"
 #include "syntax_error_observer.h"
+
+#include "duplicates_check.h"
+#include "resolution_check_pass.h"
 
 #include "cpp_generator_v2.h"
 
@@ -103,6 +105,11 @@ public:
   {
     if (this->error_flag)
       return;
+
+    if (!DuplicatesCheck::Check(*module, *mDiagObserver)) {
+      this->error_flag = true;
+      return;
+    }
 
     Resolve(*module);
 

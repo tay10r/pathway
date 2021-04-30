@@ -1,6 +1,6 @@
 #include "decl.h"
 
-#include <ostream>
+#include <sstream>
 
 void
 ModuleName::Append(std::string* identifier, const Location& location)
@@ -196,4 +196,57 @@ bool
 FuncDecl::IsPixelEncoder() const
 {
   return this->mName.Identifier() == "encode_pixel";
+}
+
+std::string
+FuncDecl::GetMangledName() const
+{
+  std::ostringstream nameStream;
+
+  nameStream << Identifier();
+
+  for (const auto& param : *mParamList) {
+    switch (param->GetType().ID()) {
+      case TypeID::Void:
+        break;
+      case TypeID::Bool:
+        nameStream << 'b';
+        break;
+      case TypeID::Int:
+        nameStream << 'i';
+        break;
+      case TypeID::Float:
+        nameStream << 'f';
+        break;
+      case TypeID::Vec2:
+        nameStream << "V2";
+        break;
+      case TypeID::Vec3:
+        nameStream << "V3";
+        break;
+      case TypeID::Vec4:
+        nameStream << "V4";
+        break;
+      case TypeID::Vec2i:
+        nameStream << "I2";
+        break;
+      case TypeID::Vec3i:
+        nameStream << "I3";
+        break;
+      case TypeID::Vec4i:
+        nameStream << "I4";
+        break;
+      case TypeID::Mat2:
+        nameStream << "M22";
+        break;
+      case TypeID::Mat3:
+        nameStream << "M33";
+        break;
+      case TypeID::Mat4:
+        nameStream << "M44";
+        break;
+    }
+  }
+
+  return nameStream.str();
 }
