@@ -2,7 +2,7 @@
 
 #include <iosfwd>
 
-class Program;
+class Module;
 
 bool
-check(const std::string& path, const Program& program, std::ostream& os);
+check(const std::string& path, const Module& module, std::ostream& os);

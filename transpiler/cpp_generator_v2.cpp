@@ -53,9 +53,9 @@ TypePrinter::Visit(const Type& type)
 }
 
 void
-Generator::Generate(const Program& program)
+Generator::Generate(const Module& module)
 {
-  if (!program.HasMainModuleDecl())
+  if (!module.HasModuleExportDecl())
     return;
 
   os << "#pragma once" << std::endl;
@@ -66,7 +66,7 @@ Generator::Generate(const Program& program)
 
   Blank();
 
-  const auto& moduleName = program.MainModuleDecl().GetModuleName();
+  const auto& moduleName = module.GetModuleExportDecl().GetModuleName();
 
   const auto& ids = moduleName.Identifiers();
 
@@ -77,7 +77,7 @@ Generator::Generate(const Program& program)
     Blank();
   }
 
-  GenerateInnerNamespaceDecls(program);
+  GenerateInnerNamespaceDecls(module);
 
   for (auto it = ids.rbegin(); it != ids.rend(); it++) {
 
@@ -110,27 +110,27 @@ Generator::GenerateTypeAliases()
 }
 
 void
-Generator::GenerateInnerNamespaceDecls(const Program& program)
+Generator::GenerateInnerNamespaceDecls(const Module& module)
 {
   Indent() << "using namespace pathway;" << std::endl;
 
   Blank();
 
-  GenerateUniformData(program);
+  GenerateUniformData(module);
 
   Blank();
 
-  GenerateVaryingData(program);
+  GenerateVaryingData(module);
 
   Blank();
 
   Indent() << "// Implementation details below." << std::endl;
 
-  GenerateFuncDefs(program);
+  GenerateFuncDefs(module);
 }
 
 void
-Generator::GenerateUniformData(const Program& program)
+Generator::GenerateUniformData(const Module& module)
 {
   os << "template <typename float_type, typename int_type>" << std::endl;
   os << "struct uniform_data final" << std::endl;
@@ -140,7 +140,7 @@ Generator::GenerateUniformData(const Program& program)
 
   GenerateTypeAliases();
 
-  for (const auto& var : program.UniformGlobalVars()) {
+  for (const auto& var : module.UniformGlobalVars()) {
 
     Blank();
 
@@ -152,7 +152,7 @@ Generator::GenerateUniformData(const Program& program)
 
     if (var->HasInitExpr()) {
 
-      ExprEnvironmentImpl exprEnv(program);
+      ExprEnvironmentImpl exprEnv(module);
 
       ExprGenerator exprGenerator(exprEnv);
 
@@ -170,7 +170,7 @@ Generator::GenerateUniformData(const Program& program)
 }
 
 void
-Generator::GenerateVaryingData(const Program& program)
+Generator::GenerateVaryingData(const Module& module)
 {
   os << "template <typename float_type, typename int_type>" << std::endl;
   os << "struct varying_data final" << std::endl;
@@ -185,7 +185,7 @@ Generator::GenerateVaryingData(const Program& program)
   Indent() << "using uniform_data_type = uniform_data<float_type, int_type>;"
            << std::endl;
 
-  for (const auto& var : program.VaryingGlobalVars()) {
+  for (const auto& var : module.VaryingGlobalVars()) {
 
     Blank();
 
@@ -203,7 +203,7 @@ Generator::GenerateVaryingData(const Program& program)
     os << ';' << std::endl;
   }
 
-  for (const auto& func : program.Funcs()) {
+  for (const auto& func : module.Funcs()) {
 
     Blank();
 
@@ -225,7 +225,7 @@ Generator::GenerateVaryingData(const Program& program)
 
     Indent() << "auto " << func->Identifier();
 
-    GenerateParamList(program, *func);
+    GenerateParamList(module, *func);
 
     os << " noexcept -> " << typePrinter.String() << ';' << std::endl;
   }
@@ -236,9 +236,9 @@ Generator::GenerateVaryingData(const Program& program)
 }
 
 void
-Generator::GenerateParamList(const Program& program, const FuncDecl& funcDecl)
+Generator::GenerateParamList(const Module& module, const FuncDecl& funcDecl)
 {
-  (void)program;
+  (void)module;
 
   std::vector<std::string> paramStrings;
 
@@ -275,9 +275,9 @@ Generator::GenerateParamList(const Program& program, const FuncDecl& funcDecl)
 }
 
 void
-Generator::GenerateFuncDefs(const Program& program)
+Generator::GenerateFuncDefs(const Module& module)
 {
-  for (const auto& func : program.Funcs()) {
+  for (const auto& func : module.Funcs()) {
 
     Blank();
 
@@ -300,7 +300,7 @@ Generator::GenerateFuncDefs(const Program& program)
         os << "operator()(const uniform_data_type&) const noexcept -> ";
     } else {
       os << func->Identifier();
-      GenerateParamList(program, *func);
+      GenerateParamList(module, *func);
       os << " noexcept -> ";
     }
 
@@ -310,7 +310,7 @@ Generator::GenerateFuncDefs(const Program& program)
 
     os << typePrinter.String() << std::endl;
 
-    StmtGenerator stmtGenerator(program);
+    StmtGenerator stmtGenerator(module);
 
     func->AcceptBodyVisitor(stmtGenerator);
 

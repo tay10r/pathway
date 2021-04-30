@@ -10,9 +10,12 @@ FetchContent_MakeAvailable(googletest)
 add_executable(ptc_unit_tests
   runtime.cpp
   diagnostics.cpp
+  duplicates_check.cpp
   cpp_expr_generation.cpp
   string_to_expr.h
   string_to_expr.cpp
+  string_to_module.h
+  string_to_module.cpp
   lexer.cpp
   type_inference.cpp)
 

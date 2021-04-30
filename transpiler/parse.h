@@ -1,9 +1,9 @@
 #pragma once
 
 class Lexer;
-class ProgramConsumer;
+class ModuleConsumer;
 class SyntaxErrorObserver;
 
 /// @return True on success, false on syntax error.
 bool
-Parse(Lexer&, ProgramConsumer&, SyntaxErrorObserver&);
+Parse(Lexer&, ModuleConsumer&, SyntaxErrorObserver&);

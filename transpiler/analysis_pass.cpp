@@ -2,7 +2,7 @@
 
 #include "abort.h"
 #include "diagnostics.h"
-#include "program.h"
+#include "module.h"
 
 void
 AnalysisPass::SetDiagObserver(DiagObserver* diagObserver) noexcept
@@ -11,29 +11,21 @@ AnalysisPass::SetDiagObserver(DiagObserver* diagObserver) noexcept
 }
 
 void
-AnalysisPass::SetProgram(const Program* program) noexcept
+AnalysisPass::SetModule(const Module* module) noexcept
 {
-  mProgram = program;
+  mModule = module;
 }
 
 bool
-AnalysisPass::Invoke(const Program& program, DiagObserver& diagObserver)
+AnalysisPass::Invoke(const Module& module, DiagObserver& diagObserver)
 {
-  SetProgram(&program);
+  SetModule(&module);
 
   SetDiagObserver(&diagObserver);
 
-  bool success = true;
+  auto success = AnalyzeModule();
 
-  for (const auto& var : program.GlobalVars()) {
-    success &= AnalyzeVarDecl(*var);
-  }
-
-  for (const auto& func : program.Funcs()) {
-    success &= AnalyzeFuncDecl(*func);
-  }
-
-  SetProgram(nullptr);
+  SetModule(nullptr);
 
   SetDiagObserver(nullptr);
 
@@ -50,14 +42,32 @@ AnalysisPass::GetDiagObserver() noexcept
   return *mDiagObserver;
 }
 
-const Program&
-AnalysisPass::GetProgram() const noexcept
+const Module&
+AnalysisPass::GetModule() const noexcept
 {
-  if (!mProgram) {
-    ABORT("Could not pass program to analyzer because it is null.");
+  if (!mModule) {
+    ABORT("Could not pass module to analyzer because it is null.");
   }
 
-  return *mProgram;
+  return *mModule;
+}
+
+bool
+AnalysisPass::AnalyzeModule()
+{
+  const auto& module = GetModule();
+
+  bool success = true;
+
+  for (const auto& var : module.GlobalVars()) {
+    success &= AnalyzeVarDecl(*var);
+  }
+
+  for (const auto& func : module.Funcs()) {
+    success &= AnalyzeFuncDecl(*func);
+  }
+
+  return success;
 }
 
 void

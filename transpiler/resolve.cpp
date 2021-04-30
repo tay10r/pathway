@@ -1,6 +1,6 @@
 #include "resolve.h"
 
-#include "program.h"
+#include "module.h"
 
 #include <map>
 
@@ -25,8 +25,8 @@ private:
 class SymbolTable final
 {
 public:
-  SymbolTable(const Program& program)
-    : mProgram(program)
+  SymbolTable(const Module& module)
+    : mModule(module)
   {}
 
   void EnterScope() { mLocalScopes.emplace_back(); }
@@ -49,7 +49,7 @@ public:
   {
     std::vector<const FuncDecl*> matches;
 
-    for (const auto& func : mProgram.Funcs()) {
+    for (const auto& func : mModule.Funcs()) {
       if (func->HasName(name))
         matches.emplace_back(func.get());
     }
@@ -66,7 +66,7 @@ public:
         return var;
     }
 
-    for (const auto& var : mProgram.GlobalVars()) {
+    for (const auto& var : mModule.GlobalVars()) {
       if (var->HasIdentifier(name))
         return var.get();
     }
@@ -78,7 +78,7 @@ private:
   std::vector<Scope> mLocalScopes;
 
   /// @note This is used for resolving global declarations.
-  const Program& mProgram;
+  const Module& mModule;
 };
 
 class ExprSymbolResolver final : public ExprMutator
@@ -180,9 +180,9 @@ private:
 };
 
 void
-ResolveFunc(Program& program, FuncDecl& fn)
+ResolveFunc(Module& module, FuncDecl& fn)
 {
-  SymbolTable symbolTable(program);
+  SymbolTable symbolTable(module);
 
   symbolTable.EnterScope();
 
@@ -199,9 +199,9 @@ ResolveFunc(Program& program, FuncDecl& fn)
 } // namespace
 
 void
-Resolve(Program& program)
+Resolve(Module& module)
 {
-  for (auto& fn : program.Funcs()) {
-    ResolveFunc(program, *fn);
+  for (auto& fn : module.Funcs()) {
+    ResolveFunc(module, *fn);
   }
 }

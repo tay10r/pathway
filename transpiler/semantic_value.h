@@ -4,13 +4,13 @@
 #include "decl_name.h"
 #include "expr.h"
 #include "location.h"
-#include "program.h"
+#include "module.h"
 #include "stmt.h"
 #include "type.h"
 
 union SemanticValue
 {
-  Program* asProgram;
+  Module* asModule;
 
   ModuleName* asModuleName;
 

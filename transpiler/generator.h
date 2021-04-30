@@ -4,7 +4,7 @@
 
 #include <assert.h>
 
-class Program;
+class Module;
 
 class Generator
 {
@@ -15,7 +15,7 @@ public:
 
   virtual ~Generator() = default;
 
-  virtual void Generate(const Program&) = 0;
+  virtual void Generate(const Module&) = 0;
 
 protected:
   std::ostream& os;

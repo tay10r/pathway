@@ -22,20 +22,20 @@ public:
     : CBasedGenerator(os)
   {}
 
-  void Generate(const Program& program) override;
+  void Generate(const Module& module) override;
 
 protected:
   void GenerateTypeAliases();
 
-  void GenerateParamList(const Program&, const FuncDecl&);
+  void GenerateParamList(const Module&, const FuncDecl&);
 
-  void GenerateUniformData(const Program&);
+  void GenerateUniformData(const Module&);
 
-  void GenerateVaryingData(const Program&);
+  void GenerateVaryingData(const Module&);
 
-  void GenerateInnerNamespaceDecls(const Program& program);
+  void GenerateInnerNamespaceDecls(const Module& module);
 
-  void GenerateFuncDefs(const Program&);
+  void GenerateFuncDefs(const Module&);
 };
 
 } // namespace cpp

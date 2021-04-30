@@ -2,15 +2,15 @@
 
 #include "cpp_expr_generator.h"
 
-#include "program.h"
+#include "module.h"
 
 namespace cpp {
 
 class ExprEnvironmentImpl final : public ExprEnvironment<ExprEnvironmentImpl>
 {
 public:
-  ExprEnvironmentImpl(const Program& program)
-    : mProgram(program)
+  ExprEnvironmentImpl(const Module& module)
+    : mModule(module)
   {}
 
   auto GetGlobalsUsageImpl(const FuncCall& funcCall) const
@@ -27,7 +27,7 @@ public:
 
   auto GetVarOriginImpl(const VarRef& varRef) const -> std::optional<VarOrigin>
   {
-    for (const auto& var : mProgram.GlobalVars()) {
+    for (const auto& var : mModule.GlobalVars()) {
 
       if (var->Identifier() != varRef.Identifier())
         continue;
@@ -72,7 +72,7 @@ public:
   }
 
 private:
-  const Program& mProgram;
+  const Module& mModule;
 };
 
 } // namespace cpp

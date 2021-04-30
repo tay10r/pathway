@@ -1,6 +1,6 @@
 #pragma once
 
-class Program;
+class Module;
 
 /// @brief Resolves all variable and function references.
 ///
@@ -10,4 +10,4 @@ class Program;
 /// @note Does not emit any diagnostics or "fail" in any way. Symbols that
 /// aren't resolve are detecting later on.
 void
-Resolve(Program& program);
+Resolve(Module& module);

@@ -1,9 +1,9 @@
 #include "string_to_expr.h"
 
 #include "lexer.h"
+#include "module.h"
+#include "module_consumer.h"
 #include "parse.h"
-#include "program.h"
-#include "program_consumer.h"
 #include "syntax_error_observer.h"
 
 #include <iostream>
@@ -21,13 +21,13 @@ public:
   }
 };
 
-class ProgramToExprConverter final : public ProgramConsumer
+class ModuleToExprConverter final : public ModuleConsumer
 {
 public:
-  void ConsumeProgram(std::unique_ptr<Program> program) override
+  void ConsumeModule(std::unique_ptr<Module> module) override
   {
-    if (program->GlobalVars().size() == 1) {
-      mExpr = program->GlobalVars()[0]->TakeInitExpr();
+    if (module->GlobalVars().size() == 1) {
+      mExpr = module->GlobalVars()[0]->TakeInitExpr();
     } else {
       std::cerr << "TEST ERROR: Unexpected number of expressions." << std::endl;
     }
@@ -52,7 +52,7 @@ StringToExpr(const std::string& str)
 
   lexer.PushFile("test_data.pt", source);
 
-  ProgramToExprConverter converter;
+  ModuleToExprConverter converter;
 
   SyntaxErrorPrinter errorPrinter;
 

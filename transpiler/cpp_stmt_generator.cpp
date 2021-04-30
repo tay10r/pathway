@@ -17,7 +17,7 @@ StmtGenerator::String() const
 void
 StmtGenerator::Visit(const AssignmentStmt& assignmentStmt)
 {
-  ExprEnvironmentImpl exprEnv(mProgram);
+  ExprEnvironmentImpl exprEnv(mModule);
 
   ExprGenerator lExprGen(exprEnv);
   ExprGenerator rExprGen(exprEnv);
@@ -56,7 +56,7 @@ StmtGenerator::Visit(const DeclStmt& declStmt)
 
   if (varDecl.HasInitExpr()) {
 
-    ExprEnvironmentImpl exprEnv(mProgram);
+    ExprEnvironmentImpl exprEnv(mModule);
 
     ExprGenerator exprGenerator(exprEnv);
 
@@ -73,7 +73,7 @@ StmtGenerator::Visit(const ReturnStmt& returnStmt)
 {
   Indent() << "return ";
 
-  ExprEnvironmentImpl exprEnv(mProgram);
+  ExprEnvironmentImpl exprEnv(mModule);
 
   ExprGenerator exprGenerator(exprEnv);
 

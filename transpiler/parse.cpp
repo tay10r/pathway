@@ -4,8 +4,8 @@
 
 bool
 Parse(Lexer& lexer,
-      ProgramConsumer& programConsumer,
+      ModuleConsumer& moduleConsumer,
       SyntaxErrorObserver& errorObserver)
 {
-  return yyparse(lexer, programConsumer, errorObserver) == 0;
+  return yyparse(lexer, moduleConsumer, errorObserver) == 0;
 }

@@ -4,15 +4,15 @@
 
 #include <sstream>
 
-class Program;
+class Module;
 
 namespace cpp {
 
 class StmtGenerator final : public StmtVisitor
 {
 public:
-  StmtGenerator(const Program& program)
-    : mProgram(program)
+  StmtGenerator(const Module& module)
+    : mModule(module)
   {}
 
   std::string String() const;
@@ -29,7 +29,7 @@ private:
 
   size_t mIndentLevel = 0;
 
-  const Program& mProgram;
+  const Module& mModule;
 };
 
 } // namespace cpp

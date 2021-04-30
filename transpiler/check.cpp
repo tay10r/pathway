@@ -1,6 +1,6 @@
 #include "check.h"
 
-#include "program.h"
+#include "module.h"
 
 #include <ostream>
 
@@ -10,15 +10,15 @@ struct check_context final
 {
   std::string path;
 
-  const Program& program;
+  const Module& module;
 
   check_context(const check_context&) = delete;
 
   check_context(const std::string& path_,
-                const Program& program_,
+                const Module& module_,
                 std::ostream& es_)
     : path(path_)
-    , program(program_)
+    , module(module_)
     , es(es_)
   {}
 
@@ -103,7 +103,7 @@ public:
 
   void run_type_checks()
   {
-    for (const auto& fn : ctx.program.Funcs())
+    for (const auto& fn : ctx.module.Funcs())
       this->type_check(*fn);
 
     // TODO : global vars
@@ -121,7 +121,7 @@ public:
     const FuncDecl* pixelSampler = nullptr;
     const FuncDecl* pixelEncoder = nullptr;
 
-    for (const auto& func : this->ctx.program.Funcs()) {
+    for (const auto& func : this->ctx.module.Funcs()) {
 
       if (func->IsPixelSampler()) {
         if (pixelSampler) {
@@ -204,9 +204,9 @@ private:
 } // namespace
 
 bool
-check(const std::string& path, const Program& program, std::ostream& es)
+check(const std::string& path, const Module& module, std::ostream& es)
 {
-  check_context ctx(path, program, es);
+  check_context ctx(path, module, es);
 
   checker c(ctx);
 

@@ -1,14 +1,13 @@
 #include "check.h"
 #include "diagnostics.h"
 #include "lexer.h"
+#include "module.h"
+#include "module_consumer.h"
 #include "parse.h"
-#include "program.h"
-#include "program_consumer.h"
 #include "resolution_check_pass.h"
 #include "resolve.h"
 #include "syntax_error_observer.h"
 
-#include "cpp_generator.h"
 #include "cpp_generator_v2.h"
 
 #include <fstream>
@@ -52,7 +51,7 @@ struct FileContext final
 };
 
 class Transpiler final
-  : public ProgramConsumer
+  : public ModuleConsumer
   , public SyntaxErrorObserver
 {
 public:
@@ -100,27 +99,27 @@ public:
 
   std::set<std::string> Dependencies() const { return mDependencies; }
 
-  void ConsumeProgram(std::unique_ptr<Program> program) override
+  void ConsumeModule(std::unique_ptr<Module> module) override
   {
     if (this->error_flag)
       return;
 
-    Resolve(*program);
+    Resolve(*module);
 
     ResolutionCheckPass resolutionCheckPass;
 
-    if (!resolutionCheckPass.Invoke(*program, *mDiagObserver)) {
+    if (!resolutionCheckPass.Invoke(*module, *mDiagObserver)) {
       this->error_flag = true;
       return;
     }
 
-    if (!check(mPathStack.at(0), *program, std::cerr)) {
+    if (!check(mPathStack.at(0), *module, std::cerr)) {
       this->error_flag = true;
       return;
     }
 
     if (mCodeGenEnabled)
-      gen->Generate(*program);
+      gen->Generate(*module);
   }
 
   void ObserveSyntaxError(const Location& loc, const char* msg) override
@@ -260,12 +259,7 @@ main(int argc, char** argv)
 
   std::unique_ptr<Generator> gen;
 
-  if (lang == "cxx")
-    lang = "cxx_v2";
-
-  if (lang == "cxx_v1") {
-    gen.reset(new CPPGenerator(output_stream));
-  } else if (lang == "cxx_v2") {
+  if (lang == "cxx") {
     gen.reset(new cpp::Generator(output_stream));
   } else {
     std::cerr << argv[0] << ": '" << lang << "' is not a supported language."

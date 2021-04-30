@@ -1,6 +1,6 @@
 %{
 #include "lexer.h"
-#include "program_consumer.h"
+#include "module_consumer.h"
 #include "syntax_error_observer.h"
 
 #include "generated/lex.h"
@@ -10,7 +10,7 @@ namespace {
 
 void yyerror(const Location* location,
              Lexer&,
-             ProgramConsumer&,
+             ModuleConsumer&,
              SyntaxErrorObserver& syntaxErrorObserver,
              const char* originalErrorMessage)
 {
@@ -54,7 +54,7 @@ int yylex(SemanticValue* value, Location* location, Lexer& lexer)
 #include "semantic_value.h"
 
 class Lexer;
-class ProgramConsumer;
+class ModuleConsumer;
 class SyntaxErrorObserver;
 }
 
@@ -72,7 +72,7 @@ class SyntaxErrorObserver;
 
 %parse-param {Lexer& lexer}
 
-%parse-param {ProgramConsumer& programConsumer}
+%parse-param {ModuleConsumer& moduleConsumer}
 
 %parse-param {SyntaxErrorObserver& syntaxErrorObserver}
 
@@ -163,7 +163,7 @@ class SyntaxErrorObserver;
 
 %type <asModuleImportDecl> module_import_decl
 
-%type <asProgram> program
+%type <asModule> module
 
 %destructor { delete $$; } IDENTIFIER
 
@@ -183,7 +183,7 @@ class SyntaxErrorObserver;
 
 %destructor { delete $$; } var_decl
 
-%destructor { delete $$; } program
+%destructor { delete $$; } module
 
 %destructor { delete $$; } module_name
 
@@ -193,48 +193,48 @@ class SyntaxErrorObserver;
 
 %%
 
-file: program END
+file: module END
     {
-      programConsumer.ConsumeProgram(std::unique_ptr<Program>($1));
+      moduleConsumer.ConsumeModule(std::unique_ptr<Module>($1));
     }
     ;
 
-program: func
+module: func
        {
-         $$ = new Program();
+         $$ = new Module();
          $$->AppendFunc($1);
        }
-       | program func
+       | module func
        {
          $$ = $1;
          $$->AppendFunc($2);
        }
-       | program var_decl
+       | module var_decl
        {
          $$ = $1;
          $$->AppendGlobalVar($2);
        }
        | var_decl
        {
-         $$ = new Program();
+         $$ = new Module();
          $$->AppendGlobalVar($1);
        }
        | module_export_decl
        {
-         $$ = new Program();
-         $$->SetMainModuleDecl($1);
+         $$ = new Module();
+         $$->SetModuleExportDecl($1);
        }
-       | program module_export_decl
+       | module module_export_decl
        {
          $$ = $1;
-         $$->SetMainModuleDecl($2);
+         $$->SetModuleExportDecl($2);
        }
        | module_import_decl
        {
-         $$ = new Program();
+         $$ = new Module();
          $$->AppendModuleImportDecl($1);
        }
-       | program module_import_decl
+       | module module_import_decl
        {
          $$ = $1;
          $$->AppendModuleImportDecl($2);

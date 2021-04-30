@@ -56,6 +56,10 @@ public:
   virtual void AcceptMutator(DeclMutator&) = 0;
 };
 
+using UniqueDeclPtr = std::unique_ptr<Decl>;
+
+using DeclList = std::vector<UniqueDeclPtr>;
+
 class ModuleName final
 {
 public:
@@ -118,7 +122,9 @@ public:
 
   void AcceptMutator(DeclMutator& mutator) override { mutator.Mutate(*this); }
 
-  bool HasModuleName() const noexcept { return !!mName; }
+  const DeclList& Body() const noexcept { return *mBody; }
+
+  bool HasBody() const noexcept { return !mBody; }
 
   const ModuleName& GetModuleName() const noexcept
   {
@@ -131,6 +137,8 @@ public:
 
 private:
   std::unique_ptr<ModuleName> mName;
+
+  std::unique_ptr<DeclList> mBody;
 };
 
 using ParamList = std::vector<std::unique_ptr<VarDecl>>;

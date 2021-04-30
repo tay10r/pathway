@@ -19,8 +19,6 @@ add_library(ptclib
   check.h
   check.cpp
   cpp_expr_generator.h
-  cpp_generator.h
-  cpp_generator.cpp
   cpp_generator_v2.h
   cpp_generator_v2.cpp
   cpp_stmt_generator.h
@@ -29,6 +27,8 @@ add_library(ptclib
   diagnostics.cpp
   decl.h
   decl.cpp
+  duplicates_check.h
+  duplicates_check.cpp
   expr.h
   expr.cpp
   lexer.h
@@ -37,8 +37,8 @@ add_library(ptclib
   location.cpp
   parse.h
   parse.cpp
-  program.h
-  program.cpp
+  module.h
+  module.cpp
   resolve.h
   resolve.cpp
   resolution_check_pass.h
